@@ -1,0 +1,21 @@
+const { Router } = require("express");
+const userController = require("../controllers/userController");
+const adminMiddleware = require("../middleware/adminMiddleware");
+
+const router = new Router();
+
+//users
+
+router.get("/users", userController.getUser); // get all users
+router.get("/users/:id", userController.getUser); // get 1 user
+router.patch(
+  "/users",
+  adminMiddleware,
+  userController.updateUser,
+); // update user
+router.post("/users", userController.authUser); // auth user (if new user return token)
+router.delete("/users", userController.removeUser); // remove user
+
+//users
+
+module.exports = router;
