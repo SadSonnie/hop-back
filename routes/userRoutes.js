@@ -6,6 +6,7 @@ const router = new Router();
 
 //users
 
+router.post("/users", userController.authUser); // Support singular form
 router.get("/users", userController.getUser); // get all users
 router.get("/users/:id", userController.getUser); // get 1 user
 router.patch(

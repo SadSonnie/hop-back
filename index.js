@@ -1,5 +1,6 @@
 const express = require("express");
 require("dotenv").config();
+const cors = require("cors");
 const errorMiddleware = require("./middleware/errorMiddleware.js");
 const session = require("express-session");
 const db = require("./models/index.js");
@@ -25,6 +26,12 @@ const tgMiddleware = require("./middleware/tgMiddleware.js")
 
 const PORT = process.env.PORT || 8080;
 const app = express();
+
+// Enable CORS
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 
 app.use(
   session({
