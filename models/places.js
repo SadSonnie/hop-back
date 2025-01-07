@@ -22,6 +22,10 @@ module.exports = (sequelize, DataTypes) => {
   }
   Places.init(
     {
+      id: {
+        type: DataTypes.BIGINT,
+        primaryKey: true
+      },
       name: DataTypes.STRING,
       address: DataTypes.STRING,
       category_id: DataTypes.INTEGER,

@@ -13,14 +13,14 @@ const returnedData = (collection) => {
   const data = {
     id: collection.id,
     name: collection.name,
-    user_id: collection.user_id,
+    description: collection.description,
   };
   if (collection.places_ids) data.places_ids = collection.places_ids;
 
   return data;
 };
 
-const createCollectionService = async ({ userId, name, placesIds }) => {
+const createCollectionService = async ({ userId, name, description, placesIds }) => {
   const transaction = await sequelize.transaction();
   try {
     const user = await findUser(userId);
@@ -29,6 +29,7 @@ const createCollectionService = async ({ userId, name, placesIds }) => {
     const collection = await Collections.create(
       {
         name,
+        description,
         user_id: user.id,
       },
       { transaction },
@@ -75,10 +76,20 @@ const createCollectionService = async ({ userId, name, placesIds }) => {
 
 const getItemCollectionService = async ({ id }) => {
   try {
-    const collection = await Collections.findByPk(id);
+    const collection = await Collections.findByPk(id, {
+      include: [{
+        model: CollectionPlace,
+        as: 'places',
+        attributes: ['place_id']
+      }]
+    });
     if (!collection) throw new Error();
 
-    return returnedData(collection.dataValues);
+    const places_ids = collection.places.map(place => place.place_id);
+    return returnedData({
+      ...collection.dataValues,
+      places_ids
+    });
   } catch (err) {
     notFoundError("Collection", id);
   }
@@ -89,8 +100,20 @@ const getItemsCollectionService = async ({ limit, offset }) => {
       limit,
       offset,
       order: [["createdAt", "DESC"]],
+      include: [{
+        model: CollectionPlace,
+        as: 'places',
+        attributes: ['place_id']
+      }]
     });
-    return collections.map((item) => returnedData(item));
+
+    return collections.map((collection) => {
+      const places_ids = collection.places.map(place => place.place_id);
+      return returnedData({
+        ...collection.dataValues,
+        places_ids
+      });
+    });
   } catch (err) {
     throw ApiError.UnauthorizedError();
   }

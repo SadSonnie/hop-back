@@ -12,16 +12,19 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "collection_id",
         as: "places",
       });
-      Collections.belongsTo(models.User, {
-        foreignKey: "user_id",
-        onDelete: "CASCADE",
-      });
     }
   }
   Collections.init(
     {
+      id: {
+        type: DataTypes.BIGINT,
+        primaryKey: true
+      },
       name: DataTypes.STRING,
-      user_id: DataTypes.INTEGER,
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: true
+      }
     },
     {
       sequelize,

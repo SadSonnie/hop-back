@@ -21,8 +21,22 @@ module.exports = (sequelize, DataTypes) => {
   }
   CollectionPlace.init(
     {
-      collection_id: DataTypes.INTEGER,
-      place_id: DataTypes.INTEGER,
+      collection_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        references: {
+          model: 'Collections',
+          key: 'id'
+        }
+      },
+      place_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        references: {
+          model: 'Places',
+          key: 'id'
+        }
+      }
     },
     {
       sequelize,

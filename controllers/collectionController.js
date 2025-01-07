@@ -10,16 +10,23 @@ const {
 } = require("../services/collectionService");
 
 class CollectionController {
+  /**
+   * Creates a new collection
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
   async create(req, res, next) {
     try {
       requestLog(req);
       const { userId } = req;
-      const { name, places_ids: placesIds } = req.body;
+      const { name, description, places_ids: placesIds } = req.body;
       if (!name) requiredField("name");
 
       const response = await createCollectionService({
         userId,
         name,
+        description,
         placesIds,
       });
 
@@ -28,6 +35,12 @@ class CollectionController {
       next(err);
     }
   }
+  /**
+   * Updates an existing collection
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
   async update(req, res, next) {
     try {
       requestLog(req);
@@ -41,6 +54,12 @@ class CollectionController {
       next(err);
     }
   }
+  /**
+   * Removes a collection
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
   async remove(req, res, next) {
     try {
       requestLog(req);
@@ -54,6 +73,12 @@ class CollectionController {
       next(err);
     }
   }
+  /**
+   * Retrieves a collection or a list of collections
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
   async getItems(req, res, next) {
     try {
       requestLog(req);
