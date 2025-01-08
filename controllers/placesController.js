@@ -33,7 +33,18 @@ class PlacesController {
   async create(req, res, next) {
     try {
       requestLog(req);
-      const { name, address, collection_ids, tags_ids, category_id } = req.body;
+      const { 
+        name, 
+        address, 
+        collection_ids, 
+        tags_ids, 
+        category_id,
+        description,
+        isPremium,
+        priceLevel,
+        coordinates,
+        phone
+      } = req.body;
 
       if (!name) requiredField("name");
       if (!address) requiredField("address");
@@ -45,6 +56,11 @@ class PlacesController {
         tagsIds: tags_ids,
         address,
         categoryId: category_id,
+        description,
+        isPremium,
+        priceLevel,
+        coordinates,
+        phone
       });
 
       return res.status(200).json({ ...response });

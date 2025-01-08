@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   PlaceTags.init(
     {
-      place_id: DataTypes.INTEGER,
+      place_id: DataTypes.BIGINT,
       tag_id: DataTypes.INTEGER,
     },
     {

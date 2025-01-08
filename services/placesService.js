@@ -16,6 +16,14 @@ const returnedValue = (place) => {
     address: place.address,
     category_id: place.category_id,
     id: place.id,
+    description: place.description,
+    isPremium: place.isPremium,
+    priceLevel: place.priceLevel,
+    coordinates: place.latitude && place.longitude ? {
+      lat: parseFloat(place.latitude),
+      lng: parseFloat(place.longitude)
+    } : null,
+    phone: place.phone
   };
   if (place.collection_ids) data.collection_ids = place.collection_ids;
   if (place.tags_ids) data.tags_ids = place.tags_ids;
@@ -29,6 +37,11 @@ const createPlaceService = async ({
   categoryId,
   collectionIds,
   tagsIds,
+  description,
+  isPremium,
+  priceLevel,
+  coordinates,
+  phone
 }) => {
   const transaction = await sequelize.transaction();
   try {
@@ -39,7 +52,18 @@ const createPlaceService = async ({
     const id = Date.now();
 
     const place = await Places.create(
-      { id, name, address, category_id: category.id },
+      { 
+        id, 
+        name, 
+        address, 
+        category_id: category.id,
+        description,
+        isPremium,
+        priceLevel,
+        latitude: coordinates?.lat,
+        longitude: coordinates?.lng,
+        phone
+      },
       { transaction },
     );
 
@@ -113,10 +137,24 @@ const createPlaceService = async ({
 
 const getItemPlaceService = async ({ id }) => {
   try {
-    const place = await Places.findByPk(id);
+    const place = await Places.findByPk(id, {
+      include: [
+        {
+          model: PlaceTags,
+          include: [{
+            model: Tags,
+            as: 'placesItems'
+          }]
+        }
+      ]
+    });
     if (!place) throw new Error();
 
-    return returnedValue(place);
+    const tags_ids = place.PlaceTags?.map(pt => pt.tag_id) || [];
+    return returnedValue({
+      ...place.dataValues,
+      tags_ids
+    });
   } catch (err) {
     notFoundError("Place", id);
   }
@@ -128,9 +166,24 @@ const getItemsPlaceService = async ({ limit, offset }) => {
       limit,
       offset,
       order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: PlaceTags,
+          include: [{
+            model: Tags,
+            as: 'placesItems'
+          }]
+        }
+      ]
     });
 
-    return places.map((place) => returnedValue(place));
+    return places.map((place) => {
+      const tags_ids = place.PlaceTags?.map(pt => pt.tag_id) || [];
+      return returnedValue({
+        ...place.dataValues,
+        tags_ids
+      });
+    });
   } catch (err) {
     notFoundError("Place", id);
   }

@@ -29,6 +29,15 @@ module.exports = (sequelize, DataTypes) => {
       name: DataTypes.STRING,
       address: DataTypes.STRING,
       category_id: DataTypes.INTEGER,
+      description: DataTypes.TEXT,
+      isPremium: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+      },
+      priceLevel: DataTypes.INTEGER,
+      latitude: DataTypes.DECIMAL(10, 8),
+      longitude: DataTypes.DECIMAL(11, 8),
+      phone: DataTypes.STRING,
     },
     {
       sequelize,
