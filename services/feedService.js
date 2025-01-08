@@ -11,8 +11,7 @@ const {
 // Функция для генерации уникального ID
 const generateUniqueId = async (model, maxAttempts = 10) => {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    // Генерируем ID в диапазоне от 1 до 2147483647 (максимальное значение для INTEGER в PostgreSQL)
-    const id = Math.floor(Math.random() * 2147483647) + 1;
+    const id = Date.now() + attempt; // Добавляем attempt чтобы избежать коллизий в одну миллисекунду
     
     // Проверяем, существует ли уже такой ID
     const existing = await model.findOne({ where: { id } });
@@ -107,12 +106,17 @@ const createItemsFeedService = async ({ items }) => {
 
     for (const item of items) {
       if (item.type === "place") {
-        const newId = await generateUniqueId(Places);
-        const place = await Places.create({
-          id: newId,
-          name: item.data.name,
-          address: item.data.address,
-        }, { transaction });
+        // Сначала пытаемся найти существующее место
+        let place = await Places.findByPk(item.id, { transaction });
+        
+        // Если место не найдено - создаем новое
+        if (!place) {
+          place = await Places.create({
+            id: item.id,
+            name: item.data.name,
+            address: item.data.address,
+          }, { transaction });
+        }
 
         createdItems.push({
           id: place.id,
@@ -123,11 +127,16 @@ const createItemsFeedService = async ({ items }) => {
           },
         });
       } else if (item.type === "collection") {
-        const newId = await generateUniqueId(Collections);
-        const collection = await Collections.create({
-          id: newId,
-          name: item.data.title,
-        }, { transaction });
+        // Сначала пытаемся найти существующую коллекцию
+        let collection = await Collections.findByPk(item.id, { transaction });
+        
+        // Если коллекция не найдена - создаем новую
+        if (!collection) {
+          collection = await Collections.create({
+            id: item.id,
+            name: item.data.title,
+          }, { transaction });
+        }
 
         if (item.data.places && Array.isArray(item.data.places)) {
           for (const place of item.data.places) {
@@ -136,18 +145,27 @@ const createItemsFeedService = async ({ items }) => {
             }, { transaction });
 
             if (!placeRecord) {
-              const placeId = await generateUniqueId(Places);
               placeRecord = await Places.create({
-                id: placeId,
+                id: place.id,
                 name: place.name,
                 address: place.address,
               }, { transaction });
             }
 
-            await CollectionPlace.create({
-              collection_id: collection.id,
-              place_id: placeRecord.id,
+            // Проверяем существование связи
+            const existingLink = await CollectionPlace.findOne({
+              where: {
+                collection_id: collection.id,
+                place_id: placeRecord.id
+              }
             }, { transaction });
+
+            if (!existingLink) {
+              await CollectionPlace.create({
+                collection_id: collection.id,
+                place_id: placeRecord.id,
+              }, { transaction });
+            }
           }
         }
 
@@ -190,69 +208,38 @@ const createItemsFeedService = async ({ items }) => {
 const updateItemFeedService = async ({ items }) => {
   const transaction = await sequelize.transaction();
   try {
-    // Обновляем порядок элементов
+    // Очищаем текущий порядок
     await FeedOrder.destroy({
       truncate: true,
       transaction
     });
 
+    // Проверяем существование всех элементов перед обновлением
+    for (const item of items) {
+      if (item.type === 'collection') {
+        const collection = await Collections.findByPk(item.id, { transaction });
+        if (!collection) {
+          throw ApiError.NotFound(`Collection with id ${item.id} not found`);
+        }
+      } else if (item.type === 'place') {
+        const place = await Places.findByPk(item.id, { transaction });
+        if (!place) {
+          throw ApiError.NotFound(`Place with id ${item.id} not found`);
+        }
+      }
+    }
+
+    // Обновляем порядок элементов
     await Promise.all(items.map(async (item, index) => {
       await FeedOrder.create({
         itemId: item.id,
         itemType: item.type,
         order: index
       }, { transaction });
-
-      if (item.type === 'collection') {
-        const collection = await Collections.findByPk(item.id);
-        if (!collection) {
-          throw ApiError.NotFound(`Collection with id ${item.id} not found`);
-        }
-
-        await collection.update({
-          name: item.data.title
-        }, { transaction });
-
-        if (item.data.places && Array.isArray(item.data.places)) {
-          await CollectionPlace.destroy({
-            where: { collection_id: item.id },
-            transaction
-          });
-
-          for (const place of item.data.places) {
-            let placeRecord = await Places.findOne({ 
-              where: { id: place.id }
-            }, { transaction });
-
-            if (!placeRecord) {
-              placeRecord = await Places.create({
-                id: place.id,
-                name: place.name,
-                address: place.address
-              }, { transaction });
-            }
-
-            await CollectionPlace.create({
-              collection_id: collection.id,
-              place_id: placeRecord.id
-            }, { transaction });
-          }
-        }
-      } else if (item.type === 'place') {
-        const place = await Places.findByPk(item.id);
-        if (!place) {
-          throw ApiError.NotFound(`Place with id ${item.id} not found`);
-        }
-
-        await place.update({
-          name: item.data.name,
-          address: item.data.address
-        }, { transaction });
-      }
     }));
 
     await transaction.commit();
-    return { items };
+    return { items, total: items.length };
   } catch (e) {
     await transaction.rollback();
     throw e;

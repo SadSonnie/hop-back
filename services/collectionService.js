@@ -26,8 +26,12 @@ const createCollectionService = async ({ userId, name, description, placesIds })
     const user = await findUser(userId);
     if (!user) notFoundError("User", userId);
 
+    // Генерируем уникальный ID
+    const id = Date.now();
+
     const collection = await Collections.create(
       {
+        id,
         name,
         description,
         user_id: user.id,

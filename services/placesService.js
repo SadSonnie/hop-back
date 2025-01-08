@@ -35,8 +35,11 @@ const createPlaceService = async ({
     const category = await Categories.findByPk(categoryId);
     if (!category) throw new Error("category");
 
+    // Генерируем уникальный ID
+    const id = Date.now();
+
     const place = await Places.create(
-      { name, address, category_id: category.id },
+      { id, name, address, category_id: category.id },
       { transaction },
     );
 
@@ -252,12 +255,10 @@ const updatePlaceService = async ({ id, ...data }) => {
       tags_ids: data.tags_ids,
     });
   } catch (err) {
-    
     const msg = err.message;
     if (msg == "place") notFoundError("Place", id);
     if (msg == "category") notFoundError("Category", id);
     await transaction.rollback();
-    
   }
 };
 

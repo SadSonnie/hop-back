@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Collections, CollectionPlace } = require('../models');
-const authMiddleware = require('../middleware/authMiddleware');
+const tgMiddleware = require('../middleware/tgMiddleware');
 
 // Get all collections
 router.get('/', async (req, res) => {
@@ -31,7 +31,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new collection
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', tgMiddleware, async (req, res) => {
     try {
         const { name, description, places_ids } = req.body;
         console.log('Request body:', req.body);
@@ -62,7 +62,7 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 // Update collection
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', tgMiddleware, async (req, res) => {
     try {
         const { name, places } = req.body;
         const collection = await Collections.findByPk(req.params.id);
@@ -98,7 +98,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete collection
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', tgMiddleware, async (req, res) => {
     try {
         const collection = await Collections.findByPk(req.params.id);
         if (!collection) {
@@ -117,7 +117,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 });
 
 // Add place to collection
-router.post('/:id/places', authMiddleware, async (req, res) => {
+router.post('/:id/places', tgMiddleware, async (req, res) => {
     try {
         const { place_id } = req.body;
         const collection = await Collections.findByPk(req.params.id);
@@ -141,7 +141,7 @@ router.post('/:id/places', authMiddleware, async (req, res) => {
 });
 
 // Remove place from collection
-router.delete('/:id/places/:placeId', authMiddleware, async (req, res) => {
+router.delete('/:id/places/:placeId', tgMiddleware, async (req, res) => {
     try {
         const { id, placeId } = req.params;
         const result = await CollectionPlace.destroy({
