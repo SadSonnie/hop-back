@@ -39,6 +39,7 @@ const getItemsFeedService = async ({ limit = 20, offset = 0 }) => {
             'collection' AS type,
             c."createdAt" AS "createdAt",
             c.name AS title,
+            c.description AS description,
             JSON_AGG(
               JSON_BUILD_OBJECT(
                 'id', p.id,
@@ -62,6 +63,7 @@ const getItemsFeedService = async ({ limit = 20, offset = 0 }) => {
             'place' AS type,
             p."createdAt" AS "createdAt",
             NULL AS title,
+            NULL AS description,
             NULL AS places,
             p.name AS name,
             p.address AS address,
@@ -85,7 +87,7 @@ const getItemsFeedService = async ({ limit = 20, offset = 0 }) => {
       type: item.type,
       data:
         item.type === "collection"
-          ? { title: item.title, places: item.places }
+          ? { title: item.title, description: item.description, places: item.places }
           : { name: item.name, address: item.address },
     }));
 
@@ -135,6 +137,7 @@ const createItemsFeedService = async ({ items }) => {
           collection = await Collections.create({
             id: item.id,
             name: item.data.title,
+            description: item.data.description,
           }, { transaction });
         }
 
@@ -174,6 +177,7 @@ const createItemsFeedService = async ({ items }) => {
           type: "collection",
           data: {
             title: collection.name,
+            description: collection.description,
             places: item.data.places,
           },
         });
