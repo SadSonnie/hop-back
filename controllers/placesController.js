@@ -7,6 +7,7 @@ const {
   getItemPlaceService,
   getItemsPlaceService,
   removePlaceService,
+  addPicturePlace,
 } = require("../services/placesService");
 
 class PlacesController {
@@ -79,6 +80,21 @@ class PlacesController {
 
       return res.status(200).json({});
     } catch (e) {
+      next(e);
+    }
+  }
+
+  async upload(req, res, next) {
+    try {
+      const { id } = req.body;
+      const { file } = req;
+
+      if (!id) requiredField("id");
+
+      const response = await addPicturePlace({ id, name: file.path });
+      return res.status(200).json({ ...response });
+    } catch (e) {
+      console.log(e);
       next(e);
     }
   }

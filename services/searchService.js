@@ -1,5 +1,5 @@
 const ApiError = require("../exceptions/apiError");
-const { Places, Categories } = require("../models");
+const { Places, Categories, PlaceTags, Tags } = require("../models");
 const { Op } = require("sequelize");
 
 const getSearchService = async ({
@@ -32,6 +32,14 @@ const getSearchService = async ({
           model: Categories,
           attributes: ["id"],
         },
+        {
+          model: PlaceTags,
+          include: [{
+            model: Tags,
+            as: "placesItems",
+            attributes: ["id"],
+          }],
+        },
       ],
       limit,
       offset,
@@ -44,10 +52,18 @@ const getSearchService = async ({
         name: place.name,
         address: place.address,
         category_id: `${place.category_id}`,
+        description: place.description,
+        isPremium: place.isPremium,
+        priceLevel: place.priceLevel,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        phone: place.phone,
+        tag_ids: place.PlaceTags ? place.PlaceTags.map(pt => pt.placesItems.id) : [],
       })),
       totalCount,
     };
   } catch (err) {
+    console.error(err);
     throw ApiError.BadRequest("Search error occurred.");
   }
 };

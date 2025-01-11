@@ -23,7 +23,8 @@ const returnedValue = (place) => {
       lat: parseFloat(place.latitude),
       lng: parseFloat(place.longitude)
     } : null,
-    phone: place.phone
+    phone: place.phone,
+    image: place.image,
   };
   if (place.collection_ids) data.collection_ids = place.collection_ids;
   if (place.tags_ids) data.tags_ids = place.tags_ids;
@@ -328,6 +329,20 @@ const removePlaceService = async (id) => {
   }
 };
 
+const addPicturePlace = async ({ id, name }) => {
+  try {
+    const place = await Places.findByPk(id);
+    if (!place) throw new Error();
+
+    const updatedPlace = await place.update({
+      image: `${process.env.HOST}${name}`,
+    });
+    return returnedValue(updatedPlace);
+  } catch (e) {
+    notFoundError("Place", id);
+  }
+};
+
 module.exports = {
   createPlaceService,
   getItemPlaceService,
@@ -335,4 +350,5 @@ module.exports = {
   updatePlaceService,
   removePlaceService,
   notFoundError,
+  addPicturePlace,
 };
