@@ -51,17 +51,23 @@ class PlacesController {
       if (!address) requiredField("address");
       if (!category_id) requiredField("category_id");
 
+      // Парсим JSON строки в массивы и объекты
+      const parsedTags = tags_ids ? JSON.parse(tags_ids) : [];
+      const parsedCollections = collection_ids ? JSON.parse(collection_ids) : [];
+      const parsedCoordinates = coordinates ? JSON.parse(coordinates) : undefined;
+
       const response = await createPlaceService({
         name,
-        collectionIds: collection_ids,
-        tagsIds: tags_ids,
+        collectionIds: parsedCollections,
+        tagsIds: parsedTags,
         address,
         categoryId: category_id,
         description,
-        isPremium,
-        priceLevel,
-        coordinates,
-        phone
+        isPremium: isPremium === 'true',
+        priceLevel: Number(priceLevel),
+        coordinates: parsedCoordinates,
+        phone,
+        photos: req.files || []
       });
 
       return res.status(200).json({ ...response });

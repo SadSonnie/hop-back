@@ -134,8 +134,11 @@ const createItemsFeedService = async ({ items }) => {
         
         // Если коллекция не найдена - создаем новую
         if (!collection) {
+          // Генерируем уникальный ID
+          const id = await generateUniqueId(Collections);
+          
           collection = await Collections.create({
-            id: item.id,
+            id,
             name: item.data.title,
             description: item.data.description,
           }, { transaction });

@@ -7,7 +7,7 @@ const router = new Router();
 
 router.get("/places", placesController.getItems);
 router.get("/places/:id", placesController.getItems);
-router.post("/places/", adminMiddleware, placesController.create);
+router.post("/places/", adminMiddleware, upload.array('photos', 10), placesController.create);
 router.patch("/places/", adminMiddleware, placesController.update);
 router.delete("/places/", adminMiddleware, placesController.remove);
 

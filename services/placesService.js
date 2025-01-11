@@ -7,8 +7,28 @@ const {
   Collections,
   CollectionPlace,
   Tags,
+  PlacePhotos,
   sequelize,
 } = require("../models");
+
+const getPhotoUrl = (filename) => {
+  if (!filename) return null;
+  return `${process.env.API_URL}/uploads/${filename}`;
+};
+
+const formatPlaceResponse = (place) => {
+  const mainPhoto = place.PlacePhotos?.find(photo => photo.is_main);
+  
+  return {
+    ...place.toJSON(),
+    main_photo_url: mainPhoto ? getPhotoUrl(mainPhoto.photo_url) : null,
+    photos: place.PlacePhotos?.map(photo => ({
+      id: photo.id,
+      url: getPhotoUrl(photo.photo_url),
+      is_main: photo.is_main
+    })) || []
+  };
+};
 
 const returnedValue = (place) => {
   const data = {
@@ -34,17 +54,19 @@ const returnedValue = (place) => {
 
 const createPlaceService = async ({
   name,
-  address,
-  categoryId,
   collectionIds,
   tagsIds,
+  address,
+  categoryId,
   description,
   isPremium,
   priceLevel,
   coordinates,
-  phone
+  phone,
+  photos = []
 }) => {
   const transaction = await sequelize.transaction();
+
   try {
     const category = await Categories.findByPk(categoryId);
     if (!category) throw new Error("category");
@@ -53,73 +75,50 @@ const createPlaceService = async ({
     const id = Date.now();
 
     const place = await Places.create(
-      { 
-        id, 
-        name, 
-        address, 
-        category_id: category.id,
+      {
+        id,
+        name,
+        address,
+        category_id: categoryId,
         description,
         isPremium,
         priceLevel,
-        latitude: coordinates?.lat,
-        longitude: coordinates?.lng,
-        phone
+        latitude: coordinates?.latitude,
+        longitude: coordinates?.longitude,
+        phone,
       },
-      { transaction },
+      { transaction }
     );
 
-    if (collectionIds) {
-      const collectionPlaces = [];
-      if (Array.isArray(collectionIds)) {
-        for (const collectionId of collectionIds) {
-          let collection = await Collections.findByPk(collectionId);
-
-          if (collection) {
-            collectionPlaces.push({
-              collection_id: collection.id,
-              place_id: place.id,
-            });
-          }
-        }
-      } else {
-        let collection = await Collections.findByPk(collectionIds);
-
-        if (collection) {
-          collectionPlaces.push({
-            collection_id: collection.id,
-            place_id: place.id,
-          });
-        }
-      }
-      if (collectionPlaces.length > 0) {
-        await CollectionPlace.bulkCreate(collectionPlaces, { transaction });
-      }
+    if (collectionIds?.length) {
+      await CollectionPlace.bulkCreate(
+        collectionIds.map((id) => ({
+          collection_id: id,
+          place_id: place.id,
+        })),
+        { transaction }
+      );
     }
 
-    if (tagsIds) {
-      const placeTags = [];
-      if (Array.isArray(tagsIds)) {
-        for (const tagId of tagsIds) {
-          const tag = await Tags.findByPk(tagId);
-          if (tag) {
-            placeTags.push({
-              tag_id: tag.id,
-              place_id: place.id,
-            });
-          }
-        }
-      } else {
-        const tag = await Tags.findByPk(tagsIds);
-        if (tag) {
-          placeTags.push({
-            tag_id: tag.id,
-            place_id: place.id,
-          });
-        }
-      }
-      if (placeTags.length > 0) {
-        await PlaceTags.bulkCreate(placeTags, { transaction });
-      }
+    if (tagsIds?.length) {
+      await PlaceTags.bulkCreate(
+        tagsIds.map((id) => ({
+          tag_id: id,
+          place_id: place.id,
+        })),
+        { transaction }
+      );
+    }
+
+    if (photos.length) {
+      await PlacePhotos.bulkCreate(
+        photos.map((photo, index) => ({
+          place_id: place.id,
+          photo_url: photo.filename,
+          is_main: index === 0 // первое фото будет главным
+        })),
+        { transaction }
+      );
     }
 
     await transaction.commit();
@@ -129,65 +128,89 @@ const createPlaceService = async ({
       collection_ids: collectionIds,
       tags_ids: tagsIds,
     });
-  } catch (err) {
-    const msg = err.message;
-    if (msg == "category") notFoundError("Category", categoryId);
+  } catch (error) {
     await transaction.rollback();
+    const msg = error.message;
+    if (msg == "category") notFoundError("Category", categoryId);
+    throw error;
   }
 };
 
 const getItemPlaceService = async ({ id }) => {
-  try {
-    const place = await Places.findByPk(id, {
-      include: [
-        {
-          model: PlaceTags,
-          include: [{
+  const place = await Places.findOne({
+    where: { id },
+    include: [
+      {
+        model: Categories,
+        attributes: ["id", "name"],
+      },
+      {
+        model: PlaceTags,
+        include: [
+          {
             model: Tags,
-            as: 'placesItems'
-          }]
-        }
-      ]
-    });
-    if (!place) throw new Error();
+            as: 'placesItems',
+            attributes: ["id", "name"],
+          },
+        ],
+      },
+      {
+        model: CollectionPlace,
+        include: [
+          {
+            model: Collections,
+            attributes: ["id", "name"],
+          },
+        ],
+      },
+      {
+        model: PlacePhotos,
+        attributes: ["id", "photo_url", "is_main"],
+      }
+    ],
+  });
 
-    const tags_ids = place.PlaceTags?.map(pt => pt.tag_id) || [];
-    return returnedValue({
-      ...place.dataValues,
-      tags_ids
-    });
-  } catch (err) {
-    notFoundError("Place", id);
-  }
+  if (!place) notFoundError("Place", id);
+
+  return formatPlaceResponse(place);
 };
 
-const getItemsPlaceService = async ({ limit, offset }) => {
-  try {
-    const places = await Places.findAll({
-      limit,
-      offset,
-      order: [["createdAt", "DESC"]],
-      include: [
-        {
-          model: PlaceTags,
-          include: [{
+const getItemsPlaceService = async ({ offset = 0, limit = 10 }) => {
+  const places = await Places.findAll({
+    offset: Number(offset),
+    limit: Number(limit),
+    include: [
+      {
+        model: Categories,
+        attributes: ["id", "name"],
+      },
+      {
+        model: PlaceTags,
+        include: [
+          {
             model: Tags,
-            as: 'placesItems'
-          }]
-        }
-      ]
-    });
+            as: 'placesItems',
+            attributes: ["id", "name"],
+          },
+        ],
+      },
+      {
+        model: CollectionPlace,
+        include: [
+          {
+            model: Collections,
+            attributes: ["id", "name"],
+          },
+        ],
+      },
+      {
+        model: PlacePhotos,
+        attributes: ["id", "photo_url", "is_main"],
+      }
+    ],
+  });
 
-    return places.map((place) => {
-      const tags_ids = place.PlaceTags?.map(pt => pt.tag_id) || [];
-      return returnedValue({
-        ...place.dataValues,
-        tags_ids
-      });
-    });
-  } catch (err) {
-    notFoundError("Place", id);
-  }
+  return places.map(formatPlaceResponse);
 };
 
 const updatePlaceService = async ({ id, ...data }) => {
@@ -204,7 +227,7 @@ const updatePlaceService = async ({ id, ...data }) => {
     await place.update(data, { transaction });
 
     if (data.collection_ids) {
-      const existingCollections = await Collection.findAll({
+      const existingCollections = await Collections.findAll({
         where: { id: data.collection_ids },
         attributes: ["id"],
       });
@@ -303,11 +326,7 @@ const updatePlaceService = async ({ id, ...data }) => {
 
     await transaction.commit();
 
-    return returnedValue({
-      ...place.dataValues,
-      collection_ids: data.collection_ids,
-      tags_ids: data.tags_ids,
-    });
+    return formatPlaceResponse(place);
   } catch (err) {
     const msg = err.message;
     if (msg == "place") notFoundError("Place", id);
@@ -337,7 +356,7 @@ const addPicturePlace = async ({ id, name }) => {
     const updatedPlace = await place.update({
       image: `${process.env.HOST}${name}`,
     });
-    return returnedValue(updatedPlace);
+    return formatPlaceResponse(updatedPlace);
   } catch (e) {
     notFoundError("Place", id);
   }

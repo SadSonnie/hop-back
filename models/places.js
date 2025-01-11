@@ -18,6 +18,9 @@ module.exports = (sequelize, DataTypes) => {
       Places.hasMany(models.CollectionPlace, {
         foreignKey: "place_id",
       });
+      Places.hasMany(models.PlacePhotos, {
+        foreignKey: "place_id",
+      });
     }
   }
   Places.init(
