@@ -79,10 +79,27 @@ const removeUserService = async ({ userId }) => {
   }
 };
 
+const toggleRoleService = async ({ userId }) => {
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw ApiError.BadRequest(notFoundError("User"));
+    }
+
+    const newRole = user.role === "ADMIN" ? "USER" : "ADMIN";
+    await user.update({ role: newRole });
+
+    return returnedData(user);
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   authService,
   getUserService,
   updateUserService,
   removeUserService,
+  toggleRoleService,
   findUser,
 };

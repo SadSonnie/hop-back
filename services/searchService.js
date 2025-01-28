@@ -1,6 +1,29 @@
 const ApiError = require("../exceptions/apiError");
-const { Places, Categories, PlaceTags, Tags } = require("../models");
+const { Places, Categories, PlaceTags, Tags, Collections, CollectionPlace, PlacePhotos } = require("../models");
 const { Op } = require("sequelize");
+
+const getPhotoUrl = (filename) => {
+  if (!filename) return null;
+  return `${process.env.API_URL}/uploads/${filename}`;
+};
+
+const formatPlaceResponse = (place) => {
+  const mainPhoto = place.PlacePhotos?.find(photo => photo.is_main);
+  
+  return {
+    ...place.toJSON(),
+    main_photo_url: mainPhoto ? getPhotoUrl(mainPhoto.photo_url) : null,
+    photos: place.PlacePhotos?.map(photo => ({
+      id: photo.id,
+      url: getPhotoUrl(photo.photo_url),
+      is_main: photo.is_main
+    })) || [],
+    coordinates: place.latitude && place.longitude ? {
+      lat: parseFloat(place.latitude),
+      lng: parseFloat(place.longitude)
+    } : null
+  };
+};
 
 const getSearchService = async ({
   query,
@@ -30,16 +53,31 @@ const getSearchService = async ({
       include: [
         {
           model: Categories,
-          attributes: ["id"],
+          attributes: ["id", "name"],
         },
         {
           model: PlaceTags,
-          include: [{
-            model: Tags,
-            as: "placesItems",
-            attributes: ["id"],
-          }],
+          include: [
+            {
+              model: Tags,
+              as: 'placesItems',
+              attributes: ["id", "name"],
+            },
+          ],
         },
+        {
+          model: CollectionPlace,
+          include: [
+            {
+              model: Collections,
+              attributes: ["id", "name"],
+            },
+          ],
+        },
+        {
+          model: PlacePhotos,
+          attributes: ["id", "photo_url", "is_main"],
+        }
       ],
       limit,
       offset,
@@ -47,19 +85,7 @@ const getSearchService = async ({
     });
 
     return {
-      items: items.map((place) => ({
-        id: `${place.id}`,
-        name: place.name,
-        address: place.address,
-        category_id: `${place.category_id}`,
-        description: place.description,
-        isPremium: place.isPremium,
-        priceLevel: place.priceLevel,
-        latitude: place.latitude,
-        longitude: place.longitude,
-        phone: place.phone,
-        tag_ids: place.PlaceTags ? place.PlaceTags.map(pt => pt.placesItems.id) : [],
-      })),
+      items: items.map(formatPlaceResponse),
       totalCount,
     };
   } catch (err) {

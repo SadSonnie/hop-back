@@ -27,9 +27,9 @@ const tgMiddleware = require("./middleware/tgMiddleware.js")
 const PORT = process.env.PORT || 8080;
 const app = express();
 
-// Enable CORS
 app.use(cors({
-  origin: true,
+  origin: '*',
+  methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'],
   credentials: true
 }));
 

@@ -5,6 +5,7 @@ const {
   getUserService,
   updateUserService,
   removeUserService,
+  toggleRoleService,
 } = require("../services/userServices");
 
 class UserController {
@@ -56,6 +57,19 @@ class UserController {
       requestLog(req);
       const { userId } = req;
       const response = await removeUserService({ userId });
+
+      return res.status(200).json({ ...response });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async toggleRole(req, res, next) {
+    try {
+      requestLog(req);
+      const { user_id: userId } = req.body;
+      
+      const response = await toggleRoleService({ userId });
 
       return res.status(200).json({ ...response });
     } catch (e) {
