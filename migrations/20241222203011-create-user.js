@@ -7,10 +7,12 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.BIGINT,
       },
       tg_id: {
-        type: Sequelize.STRING,
+        type: Sequelize.BIGINT,
+        allowNull: false,
+        unique: true
       },
       role: {
         type: Sequelize.STRING,

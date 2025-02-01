@@ -2,78 +2,36 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // Изменяем тип ID в Places
-    await queryInterface.changeColumn('Places', 'id', {
-      type: Sequelize.BIGINT,
-      allowNull: false,
-      primaryKey: true,
-      autoIncrement: true
-    });
+    await queryInterface.sequelize.query(`
+      -- Изменяем тип ID в Places
+      ALTER TABLE "Places" 
+      ALTER COLUMN id TYPE BIGINT USING id::BIGINT;
 
-    // Изменяем тип ID в Collections
-    await queryInterface.changeColumn('Collections', 'id', {
-      type: Sequelize.BIGINT,
-      allowNull: false,
-      primaryKey: true,
-      autoIncrement: true
-    });
+      -- Изменяем тип ID в Collections
+      ALTER TABLE "Collections" 
+      ALTER COLUMN id TYPE BIGINT USING id::BIGINT;
 
-    // Изменяем тип collection_id в CollectionPlaces
-    await queryInterface.changeColumn('CollectionPlaces', 'collection_id', {
-      type: Sequelize.BIGINT,
-      allowNull: false,
-      references: {
-        model: 'Collections',
-        key: 'id'
-      }
-    });
-
-    // Изменяем тип place_id в CollectionPlaces
-    await queryInterface.changeColumn('CollectionPlaces', 'place_id', {
-      type: Sequelize.BIGINT,
-      allowNull: false,
-      references: {
-        model: 'Places',
-        key: 'id'
-      }
-    });
+      -- Изменяем тип collection_id в CollectionPlaces
+      ALTER TABLE "CollectionPlaces" 
+      ALTER COLUMN collection_id TYPE BIGINT USING collection_id::BIGINT,
+      ALTER COLUMN place_id TYPE BIGINT USING place_id::BIGINT;
+    `);
   },
 
   down: async (queryInterface, Sequelize) => {
-    // Возвращаем тип ID в Places
-    await queryInterface.changeColumn('Places', 'id', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      primaryKey: true,
-      autoIncrement: true
-    });
+    await queryInterface.sequelize.query(`
+      -- Возвращаем тип ID в Places
+      ALTER TABLE "Places" 
+      ALTER COLUMN id TYPE INTEGER USING id::INTEGER;
 
-    // Возвращаем тип ID в Collections
-    await queryInterface.changeColumn('Collections', 'id', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      primaryKey: true,
-      autoIncrement: true
-    });
+      -- Возвращаем тип ID в Collections
+      ALTER TABLE "Collections" 
+      ALTER COLUMN id TYPE INTEGER USING id::INTEGER;
 
-    // Возвращаем тип collection_id в CollectionPlaces
-    await queryInterface.changeColumn('CollectionPlaces', 'collection_id', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Collections',
-        key: 'id'
-      }
-    });
-
-    // Возвращаем тип place_id в CollectionPlaces
-    await queryInterface.changeColumn('CollectionPlaces', 'place_id', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Places',
-        key: 'id'
-      }
-    });
+      -- Возвращаем типы в CollectionPlaces
+      ALTER TABLE "CollectionPlaces" 
+      ALTER COLUMN collection_id TYPE INTEGER USING collection_id::INTEGER,
+      ALTER COLUMN place_id TYPE INTEGER USING place_id::INTEGER;
+    `);
   }
 };
