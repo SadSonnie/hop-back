@@ -14,7 +14,7 @@ router.delete("/places/", adminMiddleware, placesController.remove);
 router.post(
   "/places/upload",
   adminMiddleware,
-  upload.single("image"),
+  upload.array("photos", 10),
   placesController.upload,
 );
 

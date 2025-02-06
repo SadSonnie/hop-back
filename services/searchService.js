@@ -4,7 +4,9 @@ const { Op } = require("sequelize");
 
 const getPhotoUrl = (filename) => {
   if (!filename) return null;
-  return `${process.env.API_URL}/uploads/${filename}`;
+  // Убираем лишний uploads из пути, если он есть
+  const cleanFilename = filename.replace(/^uploads\//, '');
+  return `${process.env.API_URL}/uploads/${cleanFilename}`;
 };
 
 const formatPlaceResponse = (place) => {

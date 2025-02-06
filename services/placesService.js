@@ -13,7 +13,9 @@ const {
 
 const getPhotoUrl = (filename) => {
   if (!filename) return null;
-  return `${process.env.API_URL}/uploads/${filename}`;
+  // Убираем лишний uploads из пути, если он есть
+  const cleanFilename = filename.replace(/^uploads\//, '');
+  return `${process.env.API_URL}/uploads/${cleanFilename}`;
 };
 
 const formatPlaceResponse = (place) => {
@@ -348,17 +350,43 @@ const removePlaceService = async (id) => {
   }
 };
 
-const addPicturePlace = async ({ id, name }) => {
+const addPicturePlace = async ({ id, files }) => {
+  const transaction = await sequelize.transaction();
+  
   try {
     const place = await Places.findByPk(id);
-    if (!place) throw new Error();
+    if (!place) throw new Error("place");
 
-    const updatedPlace = await place.update({
-      image: `${process.env.HOST}${name}`,
+    // Удаляем все старые фото для этого места
+    await PlacePhotos.destroy({
+      where: { place_id: id },
+      transaction
     });
+
+    // Создаем новые записи для фотографий
+    const photoRecords = files.map((filePath, index) => ({
+      place_id: id,
+      photo_url: filePath,
+      is_main: index === 0 // Первое фото становится основным
+    }));
+
+    await PlacePhotos.bulkCreate(photoRecords, { transaction });
+    
+    await transaction.commit();
+
+    // Получаем обновленное место со всеми фото
+    const updatedPlace = await Places.findByPk(id, {
+      include: [{
+        model: PlacePhotos,
+        attributes: ['id', 'photo_url', 'is_main']
+      }]
+    });
+
     return formatPlaceResponse(updatedPlace);
   } catch (e) {
-    notFoundError("Place", id);
+    await transaction.rollback();
+    if (e.message === "place") notFoundError("Place", id);
+    throw e;
   }
 };
 

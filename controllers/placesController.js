@@ -93,14 +93,18 @@ class PlacesController {
   async upload(req, res, next) {
     try {
       const { id } = req.body;
-      const { file } = req;
+      const files = req.files;
 
       if (!id) requiredField("id");
+      if (!files || !files.length) requiredField("photos");
 
-      const response = await addPicturePlace({ id, name: file.path });
+      const response = await addPicturePlace({ 
+        id, 
+        // Сохраняем только имя файла, без пути uploads/
+        files: files.map(file => file.filename)
+      });
       return res.status(200).json({ ...response });
     } catch (e) {
-      console.log(e);
       next(e);
     }
   }
@@ -111,7 +115,7 @@ class PlacesController {
       const { id } = req.body;
       if (!id) requiredField("id");
 
-      const response = await updatePlaceService(req.body);
+      const response = await updatePlaceService({ ...req.body, id: Number(id) });
 
       return res.status(200).json({ ...response });
     } catch (e) {
