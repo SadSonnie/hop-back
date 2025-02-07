@@ -8,6 +8,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'user_id',
         as: 'collections'
       });
+      Users.belongsToMany(models.Places, {
+        through: models.FavoritePlaces,
+        foreignKey: 'user_id',
+        as: 'favoritePlaces'
+      });
     }
   }
 

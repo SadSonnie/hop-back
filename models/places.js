@@ -21,6 +21,11 @@ module.exports = (sequelize, DataTypes) => {
       Places.hasMany(models.PlacePhotos, {
         foreignKey: "place_id",
       });
+      Places.belongsToMany(models.Users, {
+        through: models.FavoritePlaces,
+        foreignKey: 'place_id',
+        as: 'favoritedBy'
+      });
     }
   }
   Places.init(

@@ -20,6 +20,7 @@ const {
   profileRoutes,
   collectionsRouter,
   metricsRouter,
+  favoritePlacesRouter,
 } = require("./routes");
 const sessionMiddleware = require("./middleware/sessionMiddleware.js");
 const tgMiddleware = require("./middleware/tgMiddleware.js")
@@ -74,6 +75,7 @@ app.use("/api", searchRoutes);
 app.use("/api", profileRoutes);
 app.use("/api", collectionsRouter);
 app.use("/api", metricsRouter);
+app.use("/api", favoritePlacesRouter);
 
 app.use(errorMiddleware);
 
