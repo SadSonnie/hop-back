@@ -21,6 +21,7 @@ const {
   collectionsRouter,
   metricsRouter,
   favoritePlacesRouter,
+  reviewRoutes,
 } = require("./routes");
 const sessionMiddleware = require("./middleware/sessionMiddleware.js");
 const tgMiddleware = require("./middleware/tgMiddleware.js")
@@ -34,8 +35,9 @@ app.use(cors({
   credentials: true
 }));
 
-// Serve static files from uploads directory
+// Serve static files from uploads directory - должно быть до middleware аутентификации
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(
   session({
@@ -60,6 +62,7 @@ app.use(morgan(customFormat, { stream: logStream }));
 
 app.use(express.json());
 
+// Middleware аутентификации после static
 app.use(tgMiddleware);
 app.use(sessionMiddleware);
 
@@ -76,6 +79,7 @@ app.use("/api", profileRoutes);
 app.use("/api", collectionsRouter);
 app.use("/api", metricsRouter);
 app.use("/api", favoritePlacesRouter);
+app.use("/api", reviewRoutes);
 
 app.use(errorMiddleware);
 

@@ -11,7 +11,7 @@ const profileRoutes = require("./profileRoutes");
 const collectionsRouter = require("./collectionsRouter");
 const metricsRouter = require("./metricsRoutes");
 const favoritePlacesRouter = require("./favoritePlacesRoutes");
-
+const reviewRoutes = require('./reviewRoutes');
 
 module.exports = {
   userRoutes,
@@ -27,4 +27,5 @@ module.exports = {
   collectionsRouter,
   metricsRouter,
   favoritePlacesRouter,
+  reviewRoutes,
 };
