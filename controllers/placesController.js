@@ -9,6 +9,7 @@ const {
   removePlaceService,
   addPicturePlace,
 } = require("../services/placesService");
+const { VisitedPlaces, Places, Users } = require("../models");
 
 class PlacesController {
   async getItems(req, res, next) {
@@ -120,6 +121,88 @@ class PlacesController {
       return res.status(200).json({ ...response });
     } catch (e) {
       next(e);
+    }
+  }
+
+  async addVisitedPlace(req, res, next) {
+    try {
+      requestLog(req);
+      const { place_id } = req.body;
+      const tg_id = parseInt(req.userId); // Преобразуем в число
+
+      // Находим пользователя по Telegram ID
+      const user = await Users.findOne({ where: { tg_id } });
+      if (!user) {
+        return res.status(404).json({ message: 'Пользователь не найден' });
+      }
+
+      const visited = await VisitedPlaces.create({
+        user_id: user.id, // Используем внутренний ID пользователя
+        place_id,
+        visited_at: new Date()
+      });
+
+      return res.status(201).json(visited);
+    } catch (error) {
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        return res.status(400).json({ message: 'Это место уже отмечено как посещенное' });
+      }
+      next(error);
+    }
+  }
+
+  async removeVisitedPlace(req, res, next) {
+    try {
+      requestLog(req);
+      const place_id = req.params.id; // This is the place_id from the URL
+      const tg_id = parseInt(req.userId);
+
+      // Находим пользователя по Telegram ID
+      const user = await Users.findOne({ where: { tg_id } });
+      if (!user) {
+        return res.status(404).json({ message: 'Пользователь не найден' });
+      }
+
+      const deleted = await VisitedPlaces.destroy({
+        where: { place_id, user_id: user.id }
+      });
+
+      if (!deleted) {
+        return res.status(404).json({ message: 'Запись не найдена' });
+      }
+
+      return res.status(200).json({ message: 'Запись успешно удалена' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getVisitedPlaces(req, res, next) {
+    try {
+      requestLog(req);
+      const tg_id = parseInt(req.userId); // Преобразуем в число
+      const { limit = 10, offset = 0 } = req.query;
+
+      // Находим пользователя по Telegram ID
+      const user = await Users.findOne({ where: { tg_id } });
+      if (!user) {
+        return res.status(404).json({ message: 'Пользователь не найден' });
+      }
+
+      const visited = await VisitedPlaces.findAndCountAll({
+        where: { user_id: user.id },
+        include: [{
+          model: Places,
+          attributes: ['name', 'address', 'latitude', 'longitude']
+        }],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['visited_at', 'DESC']]
+      });
+
+      return res.status(200).json(visited);
+    } catch (error) {
+      next(error);
     }
   }
 }
