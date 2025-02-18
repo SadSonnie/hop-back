@@ -353,7 +353,7 @@ const removePlaceService = async (id) => {
   try {
     const data = await Places.destroy({
       where: {
-        id,
+        id: Number(id),
       },
     });
     if (!data) throw Error;

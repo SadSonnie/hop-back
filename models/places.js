@@ -26,6 +26,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'place_id',
         as: 'favoritedBy'
       });
+      // Добавляем связь с Reviews и каскадное удаление
+      Places.hasMany(models.Reviews, {
+        foreignKey: "place_id",
+        as: 'reviews',
+        onDelete: 'CASCADE'
+      });
     }
   }
   Places.init(
