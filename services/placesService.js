@@ -65,7 +65,9 @@ const createPlaceService = async ({
   priceLevel,
   coordinates,
   phone,
-  photos = []
+  photos = [],
+  isAdmin = false,
+  status
 }) => {
   const transaction = await sequelize.transaction();
 
@@ -88,6 +90,7 @@ const createPlaceService = async ({
         latitude: coordinates?.latitude,
         longitude: coordinates?.longitude,
         phone,
+        status: status || 'pending'
       },
       { transaction }
     );
@@ -177,42 +180,51 @@ const getItemPlaceService = async ({ id }) => {
   return formatPlaceResponse(place);
 };
 
-const getItemsPlaceService = async ({ offset = 0, limit = 10 }) => {
-  const places = await Places.findAll({
-    offset: Number(offset),
-    limit: Number(limit),
-    include: [
-      {
-        model: Categories,
-        attributes: ["id", "name"],
-      },
-      {
-        model: PlaceTags,
+const getItemsPlaceService = async ({ offset = 0, limit = 1000, showAll = false }) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const where = showAll === true ? {} : { status: 'approved' };
+      
+      const places = await Places.findAll({
+        where,
+        offset: Number(offset),
+        limit: Number(limit),
         include: [
           {
-            model: Tags,
-            as: 'placesItems',
+            model: Categories,
             attributes: ["id", "name"],
           },
-        ],
-      },
-      {
-        model: CollectionPlace,
-        include: [
           {
-            model: Collections,
-            attributes: ["id", "name"],
+            model: PlaceTags,
+            include: [
+              {
+                model: Tags,
+                as: 'placesItems',
+                attributes: ["id", "name"],
+              },
+            ],
           },
+          {
+            model: CollectionPlace,
+            include: [
+              {
+                model: Collections,
+                attributes: ["id", "name"],
+              },
+            ],
+          },
+          {
+            model: PlacePhotos,
+            attributes: ["id", "photo_url", "is_main"],
+          }
         ],
-      },
-      {
-        model: PlacePhotos,
-        attributes: ["id", "photo_url", "is_main"],
-      }
-    ],
-  });
+      });
 
-  return places.map(formatPlaceResponse);
+      resolve(places.map(formatPlaceResponse));
+    } catch (err) {
+      reject(err);
+    }
+  });
 };
 
 const updatePlaceService = async ({ id, ...data }) => {

@@ -46,6 +46,11 @@ module.exports = (sequelize, DataTypes) => {
       latitude: DataTypes.DECIMAL(10, 8),
       longitude: DataTypes.DECIMAL(11, 8),
       phone: DataTypes.STRING,
+      status: {
+        type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+        defaultValue: 'pending',
+        allowNull: false
+      }
     },
     {
       sequelize,

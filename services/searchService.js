@@ -34,7 +34,9 @@ const getSearchService = async ({
   offset = 0,
 }) => {
   try {
-    const whereConditions = {};
+    const whereConditions = {
+      status: 'approved'  // Добавляем фильтр по статусу
+    };
 
     if (query) {
       whereConditions.name = {

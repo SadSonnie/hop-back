@@ -16,14 +16,14 @@ class PlacesController {
     try {
       requestLog(req);
       const { id } = req.params;
-      const { offset, limit } = req.query;
+      const { offset, limit, showAll } = req.query;
 
       let response;
 
       if (id) {
         response = await getItemPlaceService({ id });
       } else {
-        response = await getItemsPlaceService({ offset, limit });
+        response = await getItemsPlaceService({ offset, limit, showAll: showAll === 'true' });
       }
 
       return res.status(200).json(!id ? { items: response } : { ...response });
@@ -45,7 +45,8 @@ class PlacesController {
         isPremium,
         priceLevel,
         coordinates,
-        phone
+        phone,
+        status
       } = req.body;
 
       if (!name) requiredField("name");
@@ -68,7 +69,9 @@ class PlacesController {
         priceLevel: Number(priceLevel),
         coordinates: parsedCoordinates,
         phone,
-        photos: req.files || []
+        photos: req.files || [],
+        isAdmin: req.user && req.user.role === 'ADMIN',
+        status
       });
 
       return res.status(200).json({ ...response });
