@@ -35,9 +35,7 @@ app.use(cors({
   credentials: true
 }));
 
-// Serve static files from uploads directory - должно быть до middleware аутентификации
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.json());
 
 app.use(
   session({
@@ -51,6 +49,14 @@ app.use(
   }),
 );
 
+// Serve static files from uploads directory - должно быть до middleware аутентификации
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Apply global middleware
+app.use(tgMiddleware);
+app.use(sessionMiddleware);
+
 const customFormat =
   ":method :url :status :res[content-length] - :response-time ms :date[iso]";
 
@@ -59,12 +65,6 @@ const logStream = fs.createWriteStream(path.join(__dirname, "logs/http.log"), {
 });
 
 app.use(morgan(customFormat, { stream: logStream }));
-
-app.use(express.json());
-
-// Middleware аутентификации после static
-app.use(tgMiddleware);
-app.use(sessionMiddleware);
 
 app.use("/api", userRoutes);
 app.use("/api", feedRoutes);
@@ -80,6 +80,8 @@ app.use("/api", collectionsRouter);
 app.use("/api", metricsRouter);
 app.use("/api", favoritePlacesRouter);
 app.use("/api", reviewRoutes);
+
+app.use('/api/articles', require('./routes/articleRoutes'));
 
 app.use(errorMiddleware);
 
