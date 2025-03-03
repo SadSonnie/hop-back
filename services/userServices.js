@@ -1,5 +1,5 @@
 const ApiError = require("../exceptions/apiError.js");
-const { User } = require("../models");
+const { User, TelegramUsernames } = require("../models");
 const { notFoundError } = require("../errorMessages.js");
 
 const returnedData = (user) => ({
@@ -17,7 +17,7 @@ const findUser = async (userId) => {
   return user;
 };
 
-const authService = async (userId) => {
+const authService = async (userId, username) => {
   try {
     const user = await findUser(userId);
 
@@ -26,12 +26,65 @@ const authService = async (userId) => {
         tg_id: userId,
         role: "USER",
       });
+      
+      // Создаем запись для нового пользователя
+      await TelegramUsernames.create({
+        user_id: newUser.id,
+        username: username || null,
+        last_updated: new Date()
+      });
+      
       return returnedData(newUser);
+    }
+
+    // Обновляем или создаем запись для существующего пользователя
+    const [record] = await TelegramUsernames.findOrCreate({
+      where: { user_id: user.id },
+      defaults: {
+        username: username || null,
+        last_updated: new Date()
+      }
+    });
+
+    if (record) {
+      await record.update({
+        username: username || null,
+        last_updated: new Date()
+      });
     }
 
     return returnedData(user);
   } catch (err) {
     throw ApiError.UnauthorizedError();
+  }
+};
+
+const saveUsername = async (userId, username) => {
+  try {
+    if (!username) return;
+    
+    const user = await User.findOne({
+      where: { tg_id: userId }
+    });
+    
+    if (user) {
+      const [record] = await TelegramUsernames.findOrCreate({
+        where: { user_id: user.id },
+        defaults: {
+          username: username,
+          last_updated: new Date()
+        }
+      });
+
+      if (record) {
+        await record.update({
+          username: username,
+          last_updated: new Date()
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error saving username:', err);
   }
 };
 
@@ -95,6 +148,35 @@ const toggleRoleService = async ({ userId }) => {
   }
 };
 
+const getUsernameByTgId = async (tgId) => {
+  try {
+    const user = await User.findOne({
+      where: { tg_id: tgId }
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    const usernameData = await TelegramUsernames.findOne({
+      where: { user_id: user.id },
+      attributes: ['username', 'last_updated']
+    });
+
+    if (!usernameData) {
+      return null;
+    }
+
+    return {
+      username: usernameData.username,
+      last_updated: usernameData.last_updated
+    };
+  } catch (err) {
+    console.error('Error getting username:', err);
+    return null;
+  }
+};
+
 module.exports = {
   authService,
   getUserService,
@@ -102,4 +184,6 @@ module.exports = {
   removeUserService,
   toggleRoleService,
   findUser,
+  saveUsername,
+  getUsernameByTgId
 };

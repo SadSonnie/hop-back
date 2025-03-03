@@ -20,6 +20,13 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.Moderation, {
         foreignKey: "user_id",
       });
+      User.hasMany(models.ChatTicket, {  
+        foreignKey: "user_id",
+      });
+      User.hasOne(models.TelegramUsernames, {
+        foreignKey: 'user_id',
+        as: 'TelegramUsername'
+      });
     }
   }
   User.init(

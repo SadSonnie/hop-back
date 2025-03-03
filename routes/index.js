@@ -12,6 +12,7 @@ const collectionsRouter = require("./collectionsRouter");
 const metricsRouter = require("./metricsRoutes");
 const favoritePlacesRouter = require("./favoritePlacesRoutes");
 const reviewRoutes = require('./reviewRoutes');
+const chatRoutes = require('./chatRoutes');
 
 module.exports = {
   userRoutes,
@@ -28,4 +29,5 @@ module.exports = {
   metricsRouter,
   favoritePlacesRouter,
   reviewRoutes,
+  chatRoutes,
 };

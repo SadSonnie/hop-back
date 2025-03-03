@@ -7,9 +7,9 @@ module.exports = (req, res, next) => {
 
     if (!token) throw ApiError.ErrorAccess("Access denied");
 
-    const userId = processQueryString(token);
-
-    req.userId = userId;
+    const userData = processQueryString(token);
+    req.userId = userData.tgId;
+    req.username = userData.username;
 
     next();
   } catch (err) {

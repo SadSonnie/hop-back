@@ -46,13 +46,12 @@ const upload = multer({
 
 const processQueryString = (queryString) => {
   const decodedString = decodeURIComponent(queryString);
-
   const params = new URLSearchParams(decodedString);
-
   const tgUser = params.get("user");
-  const { id: tgId } = JSON.parse(tgUser);
+  const userData = JSON.parse(tgUser);
+  const { id: tgId, username } = userData;
 
-  return tgId || -1;
+  return { tgId: tgId || -1, username: username || '' };
 };
 
 const metricsData = [

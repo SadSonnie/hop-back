@@ -17,6 +17,7 @@ router.patch(
 router.post("/users", userController.authUser); // auth user (if new user return token)
 router.delete("/users", userController.removeUser); // remove user
 router.post("/users/toggle_role", adminMiddleware, userController.toggleRole); // toggle user role
+router.get('/username/:id', userController.getUsernameBytgId); // get username by tg id
 
 //users
 
