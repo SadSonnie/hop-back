@@ -47,6 +47,10 @@ const returnedValue = (place) => {
     } : null,
     phone: place.phone,
     image: place.image,
+    website: place.website,
+    telegram: place.telegram,
+    instagram: place.instagram,
+    vk: place.vk
   };
   if (place.collection_ids) data.collection_ids = place.collection_ids;
   if (place.tags_ids) data.tags_ids = place.tags_ids;
@@ -67,7 +71,11 @@ const createPlaceService = async ({
   phone,
   photos = [],
   isAdmin = false,
-  status
+  status,
+  website,
+  telegram,
+  instagram,
+  vk
 }) => {
   const transaction = await sequelize.transaction();
 
@@ -90,7 +98,11 @@ const createPlaceService = async ({
         latitude: coordinates?.latitude,
         longitude: coordinates?.longitude,
         phone,
-        status: status || 'pending'
+        status: status || 'pending',
+        website,
+        telegram,
+        instagram,
+        vk
       },
       { transaction }
     );

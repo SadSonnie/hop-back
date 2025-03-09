@@ -46,16 +46,20 @@ class PlacesController {
         priceLevel,
         coordinates,
         phone,
-        status
+        status,
+        website,
+        telegram,
+        instagram,
+        vk
       } = req.body;
 
       if (!name) requiredField("name");
       if (!address) requiredField("address");
       if (!category_id) requiredField("category_id");
 
-      // Парсим JSON строки в массивы и объекты
-      const parsedTags = tags_ids ? JSON.parse(tags_ids) : [];
-      const parsedCollections = collection_ids ? JSON.parse(collection_ids) : [];
+      // Fix double JSON parsing issue
+      const parsedTags = tags_ids ? (typeof tags_ids === 'string' ? JSON.parse(JSON.parse(tags_ids)) : tags_ids) : [];
+      const parsedCollections = collection_ids ? (typeof collection_ids === 'string' ? JSON.parse(JSON.parse(collection_ids)) : collection_ids) : [];
       const parsedCoordinates = coordinates ? JSON.parse(coordinates) : undefined;
 
       const response = await createPlaceService({
@@ -71,7 +75,11 @@ class PlacesController {
         phone,
         photos: req.files || [],
         isAdmin: req.user && req.user.role === 'ADMIN',
-        status
+        status,
+        website,
+        telegram,
+        instagram,
+        vk
       });
 
       return res.status(200).json({ ...response });

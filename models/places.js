@@ -56,6 +56,22 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM('pending', 'approved', 'rejected'),
         defaultValue: 'pending',
         allowNull: false
+      },
+      website: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      telegram: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      instagram: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      vk: {
+        type: DataTypes.STRING,
+        allowNull: true
       }
     },
     {
