@@ -1,6 +1,7 @@
 const ApiError = require("../exceptions/apiError.js");
-const { User, TelegramUsernames } = require("../models");
+const { User, TelegramUsernames, Metrics, MetricsData } = require("../models");
 const { notFoundError } = require("../errorMessages.js");
+const { logger } = require("../logger");
 
 const returnedData = (user) => ({
   id: user.id,
@@ -33,6 +34,24 @@ const authService = async (userId, username) => {
         username: username || null,
         last_updated: new Date()
       });
+
+      // Обновляем метрику total_users
+      try {
+        const metric = await Metrics.findOne({ 
+          where: { metric_name: 'total_users' }
+        });
+        
+        if (metric) {
+          const totalUsers = await User.count();
+          await MetricsData.create({
+            metric_id: metric.id,
+            value: totalUsers,
+            user_id: newUser.id
+          });
+        }
+      } catch (metricErr) {
+        logger.error('Error updating total_users metric:', metricErr);
+      }
       
       return returnedData(newUser);
     }

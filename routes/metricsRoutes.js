@@ -4,36 +4,42 @@ const metricsController = require("../controllers/metricsController");
 
 const router = new Router();
 
+// Metrics data - должен быть первым, чтобы не конфликтовать с :id
+router.get(
+  "/metrics/data",
+  adminMiddleware,
+  metricsController.formData
+);
+
 router.get(
   "/metrics",
   adminMiddleware,
   metricsController.getItems,
 );
+
 router.get(
   "/metrics/:id",
   adminMiddleware,
   metricsController.getItems,
 );
+
 router.patch(
-  "/metrics/",
+  "/metrics",
   adminMiddleware,
   metricsController.update,
 );
+
 router.post(
-  "/metrics/",
+  "/metrics",
   adminMiddleware,
   metricsController.create,
 );
 
-
-
 router.delete(
-  "/metrics/",
+  "/metrics",
   adminMiddleware,
   metricsController.remove,
 );
-
-
 
 router.post(
   "/metrics/generate",
@@ -41,12 +47,10 @@ router.post(
   metricsController.generate,
 );
 
-// Metrics data
-
-router.get(
-  "/metrics-data",
+router.post(
+  "/metrics/generate/mock-sessions",
   adminMiddleware,
-  metricsController.formData
-)
+  metricsController.generateMockSessions,
+);
 
 module.exports = router;

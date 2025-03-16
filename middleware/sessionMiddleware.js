@@ -1,21 +1,21 @@
 const ApiError = require("../exceptions/apiError.js");
 const { sessionDataMetric } = require("../services/dataMetricService.js");
-
-
-const handleSession = async (userId) => {
-  await sessionDataMetric({userId})
-}
-
+const { logger } = require("../logger");
 
 module.exports = async (req, res, next) => {
   try {
-    const {userId, type} = req
+    const { userId } = req;
 
-    handleSession(userId)
+    if (userId) {
+      // Handle session tracking asynchronously
+      sessionDataMetric({ userId }).catch(err => {
+        logger.error("Failed to track session:", err);
+      });
+    }
 
     next();
   } catch (err) {
-    console.log(err);
-    throw ApiError.ErrorAccess("Access denied");
+    logger.error("Error in session middleware:", err);
+    next(); // Continue even if session tracking fails
   }
 };

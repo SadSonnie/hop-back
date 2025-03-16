@@ -1,6 +1,6 @@
 const { requiredField } = require("../errorMessages");
 const { requestLog } = require("../logger");
-const { calculateMetric } = require("../services/dataMetricService");
+const { calculateMetric, generateMockSessionData } = require("../services/dataMetricService");
 
 const {
   getMetricsSerice,
@@ -77,16 +77,36 @@ class MetricsController {
       const { 
         userId, 
         type,
-        active = 0, 
+        active,
         period_start, 
         period_end 
       } = req.query;
 
       if(!type) requiredField('type')
-      const response = await calculateMetric({userId, type, active, period_start, period_end})
+      
+      // Преобразуем active в boolean
+      const isActive = active === 'true' || active === '1';
+      
+      const response = await calculateMetric({
+        userId, 
+        type, 
+        active: isActive, 
+        period_start, 
+        period_end
+      });
+      
       return res.status(200).json({...response});
     } catch (err) {
       next(err);
+    }
+  }
+
+  async generateMockSessions(req, res, next) {
+    try {
+      const result = await generateMockSessionData();
+      res.json(result);
+    } catch (error) {
+      next(error);
     }
   }
 }
