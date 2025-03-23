@@ -32,6 +32,11 @@ module.exports = (sequelize, DataTypes) => {
         as: 'reviews',
         onDelete: 'CASCADE'
       });
+      // Добавляем связь с PlaceViews
+      Places.hasMany(models.PlaceViews, {
+        foreignKey: "place_id",
+        as: 'views'
+      });
     }
   }
   Places.init(

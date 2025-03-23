@@ -1,5 +1,6 @@
 const { requiredField } = require("../errorMessages");
 const { requestLog } = require("../logger");
+const PlaceViewService = require('../services/placeViewService');
 
 const {
   createPlaceService,
@@ -22,6 +23,12 @@ class PlacesController {
 
       if (id) {
         response = await getItemPlaceService({ id });
+        // Записываем просмотр места
+        await PlaceViewService.addView(
+          id,
+          req.user?.id,
+          req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web'
+        );
       } else {
         response = await getItemsPlaceService({ offset, limit, showAll: showAll === 'true' });
       }
@@ -214,6 +221,21 @@ class PlacesController {
       return res.status(200).json(visited);
     } catch (error) {
       next(error);
+    }
+  }
+
+  // Получить статистику просмотров для всех мест
+  async getPlacesStats(req, res, next) {
+    try {
+      requestLog(req);
+      
+      const stats = await PlaceViewService.getFullStats();
+      
+      return res.status(200).json({
+        items: stats
+      });
+    } catch (err) {
+      next(err);
     }
   }
 }

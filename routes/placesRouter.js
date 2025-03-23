@@ -23,6 +23,9 @@ router.post("/places/visited", tgMiddleware, placesController.addVisitedPlace);
 router.delete("/places/visited/:id", tgMiddleware, placesController.removeVisitedPlace);
 router.get("/places/visited", tgMiddleware, placesController.getVisitedPlaces);
 
+// Маршрут для получения статистики просмотров всех мест
+router.get("/places/stats", adminMiddleware, placesController.getPlacesStats);
+
 // Этот маршрут должен быть последним, так как он самый общий
 router.get("/places/:id", placesController.getItems);
 

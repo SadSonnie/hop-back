@@ -11,8 +11,48 @@ const typeExist = [
   'avg_usage_time',
   'new_users_per_month',
   'total_places',
-  'session_stats'
+  'session_stats',
+  'hourly_activity'
 ];
+
+const trackHourlyActivity = async (hour) => {
+  try {
+    let metric = await Metrics.findOne({ 
+      where: { metric_name: 'hourly_activity' }
+    });
+
+    if (!metric) {
+      metric = await Metrics.create({
+        metric_name: 'hourly_activity',
+        description: 'Hourly user activity statistics (MSK timezone)'
+      });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Find or create today's record for this hour
+    const [metricData] = await MetricsData.findOrCreate({
+      where: {
+        metric_id: metric.id,
+        date: today,
+        value: hour // we'll store the hour in the value field
+      },
+      defaults: {
+        count: 1
+      }
+    });
+
+    if (metricData) {
+      // Increment the count for this hour
+      await metricData.increment('count');
+    }
+
+    return metricData;
+  } catch (err) {
+    logger.error("Error in trackHourlyActivity:", err);
+    throw err;
+  }
+};
 
 const sessionDataMetric = async ({ userId }) => {
   try {
@@ -117,6 +157,55 @@ const calculateMetricSession = async ({user_id, metric}) => {
     value: calculateAverage(metricsData)
   }
 }
+
+const getHourlyActivityStats = async (startDate, endDate) => {
+  try {
+    const metric = await Metrics.findOne({ 
+      where: { metric_name: 'hourly_activity' }
+    });
+
+    if (!metric) {
+      return {
+        hours: Array(24).fill(0),
+        total: 0
+      };
+    }
+
+    const data = await MetricsData.findAll({
+      where: {
+        metric_id: metric.id,
+        date: {
+          [Op.between]: [startDate, endDate]
+        }
+      },
+      attributes: [
+        'value',
+        [Sequelize.fn('SUM', Sequelize.col('count')), 'total_count']
+      ],
+      group: ['value'],
+      order: ['value']
+    });
+
+    // Create array of 24 hours with counts
+    const hours = Array(24).fill(0);
+    let total = 0;
+
+    data.forEach(record => {
+      const hour = record.value;
+      const count = parseInt(record.getDataValue('total_count'));
+      hours[hour] = count;
+      total += count;
+    });
+
+    return {
+      hours,
+      total
+    };
+  } catch (err) {
+    logger.error("Error in getHourlyActivityStats:", err);
+    throw err;
+  }
+};
 
 // Расчет метрик по сессиям пользователей
 const calculateMetricSessionStats = async ({ period_start, period_end }) => {
@@ -622,5 +711,7 @@ const generateMockSessionData = async () => {
 module.exports = {
   sessionDataMetric,
   calculateMetric,
-  generateMockSessionData
+  generateMockSessionData,
+  trackHourlyActivity,
+  getHourlyActivityStats
 };

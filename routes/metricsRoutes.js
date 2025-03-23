@@ -17,6 +17,13 @@ router.get(
   metricsController.getItems,
 );
 
+// Hourly activity stats - должен быть до /metrics/:id
+router.get(
+  "/metrics/hourly",
+  adminMiddleware,
+  metricsController.getHourlyActivity
+);
+
 router.get(
   "/metrics/:id",
   adminMiddleware,

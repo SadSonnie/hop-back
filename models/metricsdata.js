@@ -23,6 +23,12 @@ module.exports = (sequelize, DataTypes) => {
       user_id: DataTypes.INTEGER,
       metric_id: DataTypes.INTEGER,
       value: DataTypes.INTEGER,
+      date: DataTypes.DATEONLY,
+      count: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+        allowNull: false
+      }
     },
     {
       sequelize,

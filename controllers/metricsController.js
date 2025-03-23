@@ -1,6 +1,6 @@
 const { requiredField } = require("../errorMessages");
 const { requestLog } = require("../logger");
-const { calculateMetric, generateMockSessionData } = require("../services/dataMetricService");
+const { calculateMetric, generateMockSessionData, getHourlyActivityStats } = require("../services/dataMetricService");
 
 const {
   getMetricsSerice,
@@ -9,8 +9,6 @@ const {
   updateMetricsService,
   generateMetricsService,
 } = require("../services/metricsService");
-
-
 
 class MetricsController {
   async getItems(req, res, next) {
@@ -107,6 +105,21 @@ class MetricsController {
       res.json(result);
     } catch (error) {
       next(error);
+    }
+  }
+
+  async getHourlyActivity(req, res, next) {
+    try {
+      requestLog(req);
+      const { start_date, end_date } = req.query;
+      
+      if (!start_date) requiredField('start_date');
+      if (!end_date) requiredField('end_date');
+
+      const stats = await getHourlyActivityStats(start_date, end_date);
+      return res.status(200).json(stats);
+    } catch (err) {
+      next(err);
     }
   }
 }
