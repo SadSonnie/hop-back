@@ -8,6 +8,7 @@ const {
   CollectionPlace,
   Tags,
   PlacePhotos,
+  PlaceViews,
   sequelize,
 } = require("../models");
 
@@ -362,15 +363,28 @@ const updatePlaceService = async ({ id, ...data }) => {
 };
 
 const removePlaceService = async (id, name, category_id, address) => {
+  // Создаем транзакцию для обеспечения целостности данных
+  const transaction = await sequelize.transaction();
+  
   try {
     // Проверяем существование места по ID
     const placeById = await Places.findByPk(id);
     
-    // Если место найдено по ID, удаляем его
+    // Если место найдено по ID, удаляем его и связанные данные
     if (placeById) {
-      await Places.destroy({
-        where: { id }
+      // Сначала удаляем связанные записи просмотров
+      await PlaceViews.destroy({
+        where: { place_id: id },
+        transaction
       });
+      
+      // Удаляем место
+      await Places.destroy({
+        where: { id },
+        transaction
+      });
+      
+      await transaction.commit();
       return;
     }
     
@@ -385,18 +399,30 @@ const removePlaceService = async (id, name, category_id, address) => {
         }
       });
       
-      // Если такое место найдено, удаляем его
+      // Если такое место найдено, удаляем его и связанные данные
       if (placeByProps) {
-        await Places.destroy({
-          where: { id: placeByProps.id }
+        // Сначала удаляем связанные записи просмотров
+        await PlaceViews.destroy({
+          where: { place_id: placeByProps.id },
+          transaction
         });
+        
+        // Удаляем место
+        await Places.destroy({
+          where: { id: placeByProps.id },
+          transaction
+        });
+        
+        await transaction.commit();
         return;
       }
     }
     
+    await transaction.rollback();
     // Если не удалось найти место ни по ID, ни по параметрам
     throw new Error("Place not found");
   } catch (err) {
+    await transaction.rollback();
     // Если ошибка связана с ненахождением места, выбрасываем соответствующую ошибку
     if (err.message === "Place not found") {
       notFoundError("Place", id);
