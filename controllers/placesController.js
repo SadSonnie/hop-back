@@ -98,10 +98,10 @@ class PlacesController {
   async remove(req, res, next) {
     try {
       requestLog(req);
-      const { id } = req.body;
+      const { id, name, address, category_id } = req.body;
       if (!id) requiredField("id");
 
-      await removePlaceService(id);
+      await removePlaceService(id, name, category_id, address);
 
       return res.status(200).json({});
     } catch (e) {

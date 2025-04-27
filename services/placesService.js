@@ -361,13 +361,37 @@ const updatePlaceService = async ({ id, ...data }) => {
   }
 };
 
-const removePlaceService = async (id) => {
+const removePlaceService = async (id, name, category_id, address) => {
   try {
+    // Сначала пытаемся удалить по ID
     const data = await Places.destroy({
       where: {
-        id: Number(id),
+        id: id,
       },
     });
+    
+    // Если запись не найдена по ID, но предоставлены name, category_id и address
+    if (!data && name && category_id && address) {
+      // Ищем место по комбинации name, category_id и address
+      const place = await Places.findOne({
+        where: {
+          name: name,
+          category_id: category_id,
+          address: address
+        }
+      });
+      
+      // Если место найдено, удаляем его
+      if (place) {
+        await Places.destroy({
+          where: {
+            id: place.id
+          }
+        });
+        return;
+      }
+    }
+    
     if (!data) throw Error;
   } catch (err) {
     notFoundError("Place", id);
