@@ -363,38 +363,47 @@ const updatePlaceService = async ({ id, ...data }) => {
 
 const removePlaceService = async (id, name, category_id, address) => {
   try {
-    // Сначала пытаемся удалить по ID
-    const data = await Places.destroy({
-      where: {
-        id: id,
-      },
-    });
+    // Проверяем существование места по ID
+    const placeById = await Places.findByPk(id);
     
-    // Если запись не найдена по ID, но предоставлены name, category_id и address
-    if (!data && name && category_id && address) {
-      // Ищем место по комбинации name, category_id и address
-      const place = await Places.findOne({
+    // Если место найдено по ID, удаляем его
+    if (placeById) {
+      await Places.destroy({
+        where: { id }
+      });
+      return;
+    }
+    
+    // Если место не найдено по ID и предоставлены дополнительные параметры
+    if (name && category_id && address) {
+      // Проверяем наличие места по name, category_id и address
+      const placeByProps = await Places.findOne({
         where: {
-          name: name,
-          category_id: category_id,
-          address: address
+          name,
+          category_id,
+          address
         }
       });
       
-      // Если место найдено, удаляем его
-      if (place) {
+      // Если такое место найдено, удаляем его
+      if (placeByProps) {
         await Places.destroy({
-          where: {
-            id: place.id
-          }
+          where: { id: placeByProps.id }
         });
         return;
       }
     }
     
-    if (!data) throw Error;
+    // Если не удалось найти место ни по ID, ни по параметрам
+    throw new Error("Place not found");
   } catch (err) {
-    notFoundError("Place", id);
+    // Если ошибка связана с ненахождением места, выбрасываем соответствующую ошибку
+    if (err.message === "Place not found") {
+      notFoundError("Place", id);
+    } else {
+      // Проброс других ошибок
+      throw err;
+    }
   }
 };
 
