@@ -13,6 +13,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'user_id',
         as: 'favoritePlaces'
       });
+      Users.belongsToMany(models.ChecklistItem, {
+        through: models.UserChecklistStatus,
+        foreignKey: 'user_id',
+        as: 'checklistItems'
+      });
     }
   }
 

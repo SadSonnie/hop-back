@@ -13,6 +13,7 @@ const metricsRouter = require("./metricsRoutes");
 const favoritePlacesRouter = require("./favoritePlacesRoutes");
 const reviewRoutes = require('./reviewRoutes');
 const chatRoutes = require('./chatRoutes');
+const checklistRoutes = require('./checklistRoutes');
 
 module.exports = {
   userRoutes,
@@ -30,4 +31,5 @@ module.exports = {
   favoritePlacesRouter,
   reviewRoutes,
   chatRoutes,
+  checklistRoutes,
 };

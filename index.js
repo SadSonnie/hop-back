@@ -23,6 +23,7 @@ const {
   favoritePlacesRouter,
   reviewRoutes,
   chatRoutes,
+  checklistRoutes,
 } = require("./routes");
 const sessionMiddleware = require("./middleware/sessionMiddleware.js");
 const tgMiddleware = require("./middleware/tgMiddleware.js")
@@ -82,6 +83,7 @@ app.use("/api", metricsRouter);
 app.use("/api", favoritePlacesRouter);
 app.use("/api", reviewRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api", checklistRoutes);
 
 app.use('/api/articles', require('./routes/articleRoutes'));
 
