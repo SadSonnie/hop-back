@@ -238,6 +238,36 @@ class PlacesController {
       next(err);
     }
   }
+  
+  // Получить статистику просмотров по временной шкале для графика
+  async getPlacesViewsTimeSeries(req, res, next) {
+    try {
+      requestLog(req);
+      
+      const { interval = 'day', place_id } = req.query;
+      // Определяем, был ли передан параметр days
+      const daysWasProvided = 'days' in req.query;
+      const parsedDays = daysWasProvided ? parseInt(req.query.days) : null;
+      
+      const timeSeriesData = await PlaceViewService.getViewsTimeSeries(
+        parsedDays, 
+        interval, 
+        place_id ? parseInt(place_id) : null
+      );
+      
+      return res.status(200).json({
+        data: timeSeriesData,
+        meta: {
+          days: parsedDays,
+          interval,
+          place_id: place_id ? parseInt(place_id) : null,
+          all_time: !daysWasProvided
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 module.exports = new PlacesController();

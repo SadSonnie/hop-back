@@ -26,6 +26,9 @@ router.get("/places/visited", tgMiddleware, placesController.getVisitedPlaces);
 // Маршрут для получения статистики просмотров всех мест
 router.get("/places/stats", adminMiddleware, placesController.getPlacesStats);
 
+// Маршрут для получения данных для графика просмотров
+router.get("/places/stats/time-series", adminMiddleware, placesController.getPlacesViewsTimeSeries);
+
 // Этот маршрут должен быть последним, так как он самый общий
 router.get("/places/:id", placesController.getItems);
 

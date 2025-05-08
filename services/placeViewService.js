@@ -133,6 +133,88 @@ class PlaceViewService {
       last_view_at: stat.get('last_view_at')
     }));
   }
+
+  // Получить статистику просмотров по временной шкале
+  static async getViewsTimeSeries(days = 30, interval = 'day', placeId = null) {
+    // Составим условие WHERE
+    const whereCondition = {};
+    
+    // Если days не null (параметр был передан), добавляем фильтр по дате
+    if (days !== null) {
+      const now = new Date();
+      const startDate = new Date(now - days * 24 * 60 * 60 * 1000);
+      
+      whereCondition.viewed_at = {
+        [Op.gte]: startDate
+      };
+    }
+    
+    // Формат группировки в зависимости от интервала
+    let dateFormat;
+    switch(interval) {
+      case 'hour':
+        dateFormat = "YYYY-MM-DD HH24:00:00";
+        break;
+      case 'week':
+        dateFormat = "YYYY-IW"; // ISO неделя года
+        break;
+      case 'month':
+        dateFormat = "YYYY-MM";
+        break;
+      default: // day
+        dateFormat = "YYYY-MM-DD";
+    }
+    
+    // Если указан конкретный place_id, добавим его в условие
+    if (placeId) {
+      whereCondition.place_id = placeId;
+    }
+    
+    // Получаем данные, группированные по времени
+    const viewsData = await PlaceViews.findAll({
+      attributes: [
+        [sequelize.fn('to_char', sequelize.col('viewed_at'), dateFormat), 'time_period'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'views_count'],
+        ...(placeId ? [] : [[sequelize.col('place_id'), 'place_id']])
+      ],
+      where: whereCondition,
+      group: [
+        sequelize.fn('to_char', sequelize.col('viewed_at'), dateFormat),
+        ...(placeId ? [] : [sequelize.col('place_id')])
+      ],
+      order: [
+        [sequelize.fn('to_char', sequelize.col('viewed_at'), dateFormat), 'ASC'],
+        ...(placeId ? [] : [[sequelize.literal('views_count'), 'DESC']])
+      ]
+    });
+    
+    if (placeId) {
+      // Для одного места возвращаем простой массив [время, кол-во просмотров]
+      return viewsData.map(item => ({
+        time_period: item.get('time_period'),
+        views_count: parseInt(item.get('views_count'))
+      }));
+    } else {
+      // Для всех мест группируем по place_id
+      const result = {};
+      viewsData.forEach(item => {
+        const placeId = item.get('place_id');
+        const timePeriod = item.get('time_period');
+        const viewsCount = parseInt(item.get('views_count'));
+        
+        if (!result[placeId]) {
+          result[placeId] = [];
+        }
+        
+        result[placeId].push({
+          time_period: timePeriod,
+          views_count: viewsCount
+        });
+      });
+      
+      return result;
+    }
+  }
 }
 
 module.exports = PlaceViewService;
