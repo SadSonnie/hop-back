@@ -21,6 +21,15 @@ module.exports = (sequelize, DataTypes) => {
       Places.hasMany(models.PlacePhotos, {
         foreignKey: "place_id",
       });
+      Places.hasMany(models.PlaceStoryPhotos, {
+        foreignKey: "place_id",
+      });
+      Places.hasOne(models.LocalAdvice, {
+        foreignKey: "place_id",
+      });
+      Places.hasMany(models.PlaceUserPhotos, {
+        foreignKey: "place_id",
+      });
       Places.belongsToMany(models.Users, {
         through: models.FavoritePlaces,
         foreignKey: 'place_id',
@@ -75,6 +84,14 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true
       },
       vk: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      avatar_url: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
+      hoop_video_url: {
         type: DataTypes.STRING,
         allowNull: true
       }

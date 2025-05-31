@@ -21,14 +21,30 @@ const storage = multer.diskStorage({
   destination: (_, __, cb) => {
     cb(null, "uploads");
   },
-  filename: (_, file, cb) => {
-    const splitName = file.originalname.split(".");
-    cb(null, `${Date.now()}.${splitName[splitName.length - 1]}`);
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 15);
+    const originalExtension = file.originalname.split(".").pop();
+    
+    // Формат: timestamp-random-originalname.ext
+    const filename = `${timestamp}-${randomString}-${file.originalname.replace(/[^a-zA-Z0-9]/g, '_')}`
+      .substring(0, 200); // Ограничиваем длину имени файла
+
+    cb(null, filename);
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  // Разрешаем видео для поля hoop_video
+  if (file.fieldname === 'hoop_video') {
+    if (file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only videos are allowed for hoop_video!'), false);
+    }
+  } 
+  // Для всех остальных полей разрешаем только изображения
+  else if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
     cb(new Error('Only images are allowed!'), false);
@@ -39,7 +55,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 50 * 1024 * 1024, // 50MB limit
     files: 10 // maximum 10 files
   }
 });
