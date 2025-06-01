@@ -42,93 +42,46 @@ class PlacesController {
 
   async create(req, res, next) {
     try {
-      requestLog(req);
-      const { 
-        name, 
-        address, 
-        collection_ids, 
-        tags_ids, 
-        category_id,
-        description,
-        isPremium,
-        priceLevel,
-        coordinates,
-        phone,
-        status,
-        website,
-        telegram,
-        instagram,
-        vk,
-        local_advice,
-        user_photos
-      } = req.body;
+      console.log('\n=== DEBUG POST /places START ===');
+      console.log('Request body:', req.body);
+      console.log('Files:', req.files);
+      console.log('Content-Type:', req.headers['content-type']);
 
-      const files = req.files || {};
-      
-      if (!name) requiredField("name");
-      if (!address) requiredField("address");
-      if (!category_id) requiredField("category_id");
+      if (!req.body.name) requiredField("name");
+      if (!req.body.address) requiredField("address");
+      if (!req.body.category_id) requiredField("category_id");
 
-      const parseJsonField = (field) => {
-        if (!field) return null;
-        if (typeof field === 'object') return field;
-        try {
-          return JSON.parse(field);
-        } catch {
-          return field;
-        }
-      };
-
-      const parsedLocalAdvice = parseJsonField(local_advice);
-      const parsedCoordinates = parseJsonField(coordinates);
-      const parsedTags = parseJsonField(tags_ids) || [];
-      const parsedCollections = parseJsonField(collection_ids) || [];
-      const parsedUserPhotos = parseJsonField(user_photos) || [];
-
-      // Обработка загруженных файлов
-      const photos = files.photos || [];
-      const storyPhotos = files.story_photos || [];
-      const userPhotoFiles = files.user_photos || [];
-      const hoopVideo = files.hoop_video?.[0];
-
-      // Сопоставляем загруженные пользовательские фото с их данными
-      const processedUserPhotos = userPhotoFiles.map((photo, index) => {
-        const metadata = parsedUserPhotos[index] || {};
-        return {
-          photo,
-          author_name: metadata.author_name || 'Unknown',
-          caption: metadata.caption || '',
-          link: metadata.link || '',
-          date: metadata.date || new Date()
-        };
-      });
-
+      console.log('\n=== Calling createPlaceService ===');
       const response = await createPlaceService({
-        name,
-        collectionIds: parsedCollections,
-        tagsIds: parsedTags,
-        address,
-        categoryId: category_id,
-        description,
-        isPremium: isPremium === 'true',
-        priceLevel: Number(priceLevel),
-        coordinates: parsedCoordinates,
-        phone,
-        photos,
-        storyPhotos,
-        localAdvice: parsedLocalAdvice,
-        userPhotos: processedUserPhotos,
-        hoopVideo,
+        name: req.body.name,
+        collectionIds: req.body.collection_ids ? JSON.parse(req.body.collection_ids) : null,
+        tagsIds: req.body.tags_ids ? (Array.isArray(req.body.tags_ids) ? req.body.tags_ids : [req.body.tags_ids]) : [],
+        address: req.body.address,
+        categoryId: req.body.category_id,
+        description: req.body.description,
+        isPremium: req.body.isPremium === 'true',
+        priceLevel: Number(req.body.priceLevel),
+        coordinates: req.body.coordinates ? JSON.parse(req.body.coordinates) : null,
+        phone: req.body.phone,
+        files: req.files,
+        localAdvice: req.body.local_advice ? JSON.parse(req.body.local_advice) : null,
+        userPhotos: req.body.user_photos_metadata ? JSON.parse(req.body.user_photos_metadata) : [],
         isAdmin: req.user && req.user.role === 'ADMIN',
-        status,
-        website,
-        telegram,
-        instagram,
-        vk
+        status: req.body.status,
+        website: req.body.website,
+        telegram: req.body.telegram,
+        instagram: req.body.instagram,
+        vk: req.body.vk
       });
+
+      console.log('\n=== Service response ===');
+      console.log('Response:', response);
+      console.log('=== DEBUG POST /places END ===\n');
 
       return res.status(200).json({ ...response });
     } catch (e) {
+      console.log('\n=== ERROR in create place ===');
+      console.error('Error:', e);
       next(e);
     }
   }

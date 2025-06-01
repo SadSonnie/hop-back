@@ -4,7 +4,7 @@ const notFound = (item, id) => {
   return `${item} with id = ${id} not found`;
 };
 const badRequest = (item) => {
-  return `The “${item}” field is required.`;
+  return `The "${item}" field is required.`;
 };
 
 const notFoundError = (field, id) => {
@@ -12,7 +12,7 @@ const notFoundError = (field, id) => {
 };
 
 const requiredField = (field) => {
-  throw ApiError.NotFound(badRequest(field));
+  throw ApiError.BadRequest(badRequest(field));
 };
 
 module.exports = {

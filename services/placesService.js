@@ -1,6 +1,8 @@
 const models = require("../models");
 const ApiError = require("../exceptions/apiError");
 const { notFoundError } = require("../errorMessages");
+const fs = require('fs').promises;
+const path = require('path');
 
 const getPhotoUrl = (filename) => {
   if (!filename) return null;
@@ -92,11 +94,9 @@ const createPlaceService = async ({
   priceLevel,
   coordinates,
   phone,
-  photos = [],
-  storyPhotos = [],
+  files = {},
   localAdvice = null,
   userPhotos = [],
-  hoopVideo = null,
   isAdmin = false,
   status,
   website,
@@ -104,9 +104,39 @@ const createPlaceService = async ({
   instagram,
   vk
 }) => {
+  console.log('\n=== Starting createPlaceService ===');
   const transaction = await models.sequelize.transaction();
+  const uploadedFiles = [];
 
   try {
+    // Track uploaded files for cleanup in case of error
+    const trackFile = (file) => {
+      if (file && file.filename) {
+        uploadedFiles.push(path.join('uploads', file.filename));
+      }
+    };
+
+    Object.values(files).flat().forEach(trackFile);
+    
+    // Обработка координат
+    let latitude = null;
+    let longitude = null;
+    
+    if (coordinates) {
+      if (typeof coordinates === 'string') {
+        try {
+          const parsed = JSON.parse(coordinates);
+          latitude = parsed.lat || parsed.latitude;
+          longitude = parsed.lng || parsed.longitude;
+        } catch (error) {
+          console.error('Error parsing coordinates:', error.message);
+        }
+      } else if (typeof coordinates === 'object') {
+        latitude = coordinates.lat || coordinates.latitude;
+        longitude = coordinates.lng || coordinates.longitude;
+      }
+    }
+
     const category = await models.Categories.findByPk(categoryId);
     if (!category) throw new Error("category");
 
@@ -121,15 +151,16 @@ const createPlaceService = async ({
         description,
         isPremium,
         priceLevel,
-        latitude: coordinates?.latitude,
-        longitude: coordinates?.longitude,
+        latitude,
+        longitude,
         phone,
         status: status || 'pending',
         website,
         telegram,
         instagram,
         vk,
-        hoop_video_url: hoopVideo?.filename
+        avatar_url: files.avatar?.[0]?.filename,
+        hoop_video_url: files.hoop_video?.[0]?.filename
       },
       { transaction }
     );
@@ -154,9 +185,9 @@ const createPlaceService = async ({
       );
     }
 
-    if (photos.length) {
+    if (files.photos?.length) {
       await models.PlacePhotos.bulkCreate(
-        photos.map((photo, index) => ({
+        files.photos.map((photo, index) => ({
           place_id: place.id,
           photo_url: photo.filename,
           is_main: index === 0
@@ -165,9 +196,9 @@ const createPlaceService = async ({
       );
     }
 
-    if (storyPhotos.length) {
+    if (files.story_photos?.length) {
       await models.PlaceStoryPhotos.bulkCreate(
-        storyPhotos.map(photo => ({
+        files.story_photos.map(photo => ({
           place_id: place.id,
           photo_url: photo.filename
         })),
@@ -176,7 +207,7 @@ const createPlaceService = async ({
     }
 
     if (localAdvice) {
-      await models.LocalAdvice.create({
+      const createdAdvice = await models.LocalAdvice.create({
         place_id: place.id,
         title: localAdvice.title,
         content: localAdvice.content,
@@ -185,37 +216,83 @@ const createPlaceService = async ({
         occupation: localAdvice.occupation,
         link: localAdvice.link
       }, { transaction });
+
+      if (files.local_advice_photo?.length) {
+        await models.LocalAdvicePhotos.bulkCreate(
+          files.local_advice_photo.map(photo => ({
+            local_advice_id: createdAdvice.id,
+            photo_url: photo.filename
+          })),
+          { transaction }
+        );
+      }
     }
 
-    if (userPhotos.length) {
+    if (files.user_photos?.length) {
       await models.PlaceUserPhotos.bulkCreate(
-        userPhotos.map(photo => ({
-          id: Date.now() + Math.floor(Math.random() * 1000),
-          place_id: place.id,
-          photo_url: photo.photo.filename,
-          author_name: photo.author_name,
-          caption: photo.caption,
-          link: photo.link,
-          date: photo.date || new Date()
-        })),
+        files.user_photos.map((photo, index) => {
+          const metadata = userPhotos[index] || {};
+          return {
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            place_id: place.id,
+            photo_url: photo.filename,
+            author_name: metadata.author_name || 'Unknown',
+            caption: metadata.caption || '',
+            link: metadata.link || '',
+            date: metadata.date || new Date()
+          };
+        }),
         { transaction }
       );
     }
 
     await transaction.commit();
 
-    return returnedValue({
-      ...place.dataValues,
-      collection_ids: collectionIds,
-      tags_ids: tagsIds,
-      story_photos: storyPhotos,
-      local_advice: localAdvice,
-      user_photos: userPhotos
+    // Get the created place with all its relations
+    const createdPlace = await models.Places.findByPk(place.id, {
+      include: [
+        {
+          model: models.PlacePhotos,
+          attributes: ["id", "photo_url", "is_main"],
+        },
+        {
+          model: models.PlaceStoryPhotos,
+          attributes: ["id", "photo_url"],
+        },
+        {
+          model: models.LocalAdvice,
+          attributes: ["id", "title", "content", "author_name", "author_nickname", "occupation", "link"],
+          include: [
+            {
+              association: 'LocalAdvicePhotos',
+              attributes: ["id", "photo_url"]
+            },
+          ],
+        },
+        {
+          model: models.PlaceUserPhotos,
+          attributes: ["id", "photo_url", "author_name", "caption", "link", "date"],
+        },
+      ],
     });
+
+    console.log('=== createPlaceService completed successfully ===');
+    return formatPlaceResponse(createdPlace);
   } catch (error) {
+    console.error('Error in createPlaceService:', error.message);
     await transaction.rollback();
+
+    // Cleanup uploaded files on error
+    for (const filePath of uploadedFiles) {
+      try {
+        await fs.unlink(filePath);
+      } catch (cleanupError) {
+        console.error(`Failed to clean up file ${filePath}:`, cleanupError.message);
+      }
+    }
+
     const msg = error.message;
-    if (msg == "category") notFoundError("Category", categoryId);
+    if (msg === "category") notFoundError("Category", categoryId);
     throw error;
   }
 };

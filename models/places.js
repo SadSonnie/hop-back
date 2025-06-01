@@ -46,6 +46,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "place_id",
         as: 'views'
       });
+      // Добавляем связь с Features
+      Places.belongsToMany(models.Features, {
+        through: 'PlaceFeatures',
+        foreignKey: 'place_id',
+        as: 'features'
+      });
     }
   }
   Places.init(
