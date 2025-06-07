@@ -24,7 +24,10 @@ const {
   reviewRoutes,
   chatRoutes,
   checklistRoutes,
-  featureRoutes
+  featureRoutes,
+  contextualTagsRouter,
+  placeContextualTagsRouter,
+  placeUserPhotosTitleRouter
 } = require("./routes");
 const sessionMiddleware = require("./middleware/sessionMiddleware.js");
 const tgMiddleware = require("./middleware/tgMiddleware.js")
@@ -60,14 +63,18 @@ app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(tgMiddleware);
 app.use(sessionMiddleware);
 
-const customFormat =
-  ":method :url :status :res[content-length] - :response-time ms :date[iso]";
+// Упрощенный формат логирования
+const customFormat = ":method :url :status - :response-time ms";
 
 const logStream = fs.createWriteStream(path.join(__dirname, "logs/http.log"), {
   flags: "a",
 });
 
-app.use(morgan(customFormat, { stream: logStream }));
+// Логируем только ошибки
+app.use(morgan(customFormat, { 
+  skip: function (req, res) { return res.statusCode < 400 },
+  stream: logStream 
+}));
 
 app.use("/api", userRoutes);
 app.use("/api", feedRoutes);
@@ -86,6 +93,9 @@ app.use("/api", reviewRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api", checklistRoutes);
 app.use("/api/features", featureRoutes);
+app.use("/api/contextual-tags", contextualTagsRouter);
+app.use("/api/place-contextual-tags", placeContextualTagsRouter);
+app.use("/api/place-user-photos-title", placeUserPhotosTitleRouter);
 
 app.use('/api/articles', require('./routes/articleRoutes'));
 

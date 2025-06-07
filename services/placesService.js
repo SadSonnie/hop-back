@@ -477,15 +477,31 @@ const updatePlaceService = async ({ id, body, ...data }) => {
 
     // Обновляем теги места
     if (data.tagsIds && Array.isArray(data.tagsIds)) {
-      // Удаляем старые связи с тегами
-      await models.PlaceTags.destroy({
+      // Получаем текущие теги места
+      const currentPlaceTags = await models.PlaceTags.findAll({
         where: { place_id: id },
         transaction
       });
+      const currentTagIds = currentPlaceTags.map(tag => tag.tag_id);
 
-      // Создаем новые связи с тегами
-      if (data.tagsIds.length > 0) {
-        const tagRecords = data.tagsIds.map(tagId => ({
+      // Находим теги, которые нужно удалить и добавить
+      const tagsToRemove = currentTagIds.filter(tagId => !data.tagsIds.includes(tagId));
+      const tagsToAdd = data.tagsIds.filter(tagId => !currentTagIds.includes(tagId));
+
+      // Удаляем только те теги, которые действительно нужно удалить
+      if (tagsToRemove.length > 0) {
+        await models.PlaceTags.destroy({
+          where: { 
+            place_id: id,
+            tag_id: tagsToRemove
+          },
+          transaction
+        });
+      }
+
+      // Добавляем новые теги
+      if (tagsToAdd.length > 0) {
+        const tagRecords = tagsToAdd.map(tagId => ({
           place_id: id,
           tag_id: tagId
         }));

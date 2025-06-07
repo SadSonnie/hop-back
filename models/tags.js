@@ -11,6 +11,11 @@ module.exports = (sequelize, DataTypes) => {
       Tags.hasMany(models.PlaceTags, {
         foreignKey: "tag_id",
       });
+      // Добавляем связь с контекстными тегами
+      Tags.hasMany(models.ContextualTags, {
+        foreignKey: 'parent_tag_id',
+        as: 'contextualTags'
+      });
     }
   }
   Tags.init(

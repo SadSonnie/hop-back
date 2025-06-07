@@ -104,5 +104,6 @@ const getProfileService = async () => {
 
 module.exports = {
   createProfileService,
-  getProfileService
+  getProfileService,
+  getAllTags
 };

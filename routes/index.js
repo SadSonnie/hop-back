@@ -15,6 +15,9 @@ const reviewRoutes = require('./reviewRoutes');
 const chatRoutes = require('./chatRoutes');
 const checklistRoutes = require('./checklistRoutes');
 const featureRoutes = require('./featureRoutes');
+const contextualTagsRouter = require('./contextualTagsRouter');
+const placeContextualTagsRouter = require('./placeContextualTagsRouter');
+const placeUserPhotosTitleRouter = require('./placeUserPhotosTitleRouter');
 
 module.exports = {
   userRoutes,
@@ -33,5 +36,8 @@ module.exports = {
   reviewRoutes,
   chatRoutes,
   checklistRoutes,
-  featureRoutes
+  featureRoutes,
+  contextualTagsRouter,
+  placeContextualTagsRouter,
+  placeUserPhotosTitleRouter
 };

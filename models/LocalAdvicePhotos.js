@@ -6,7 +6,10 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       LocalAdvicePhotos.belongsTo(models.LocalAdvice, {
         foreignKey: 'local_advice_id',
-        onDelete: 'CASCADE'
+        as: 'LocalAdvice',
+        onDelete: 'CASCADE',
+        foreignKeyConstraint: true,
+        constraints: false // Отключаем автоматическое создание ограничений
       });
     }
   }
@@ -19,7 +22,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     local_advice_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      references: {
+        model: 'LocalAdvice',
+        key: 'id'
+      }
     },
     photo_url: {
       type: DataTypes.STRING,
@@ -28,6 +35,7 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'LocalAdvicePhotos',
+    tableName: 'LocalAdvicePhotos'
   });
   
   return LocalAdvicePhotos;

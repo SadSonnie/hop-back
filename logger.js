@@ -15,9 +15,8 @@ const logger = winston.createLogger({
 });
 
 const requestLog = (req) => {
-  logger.info(
-    `Request: ${req.method} /api${req.url}; user - ${req.userId}; body - ${JSON.stringify(req.body)};`,
-  );
+  const bodyLog = req.method === 'GET' ? '' : `; body - ${JSON.stringify(req.body)}`;
+  logger.info(`${req.method} ${req.url}${bodyLog}`);
 };
 
 module.exports = {
