@@ -26,8 +26,9 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     content: {
-      type: DataTypes.TEXT,
-      allowNull: true
+      type: DataTypes.JSONB,
+      allowNull: true,
+      defaultValue: { blocks: [] }
     },
     photo_url: {
       type: DataTypes.STRING,

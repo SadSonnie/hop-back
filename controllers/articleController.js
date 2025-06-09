@@ -7,8 +7,27 @@ class ArticleController {
       requestLog(req);
       let articleData = req.body;
       
-      if (req.file) {
-        articleData.photo = req.file.filename;
+      // Парсим JSON контент, если он передан как строка
+      if (typeof articleData.content === 'string') {
+        try {
+          articleData.content = JSON.parse(articleData.content);
+        } catch (e) {
+          throw new Error('Invalid content JSON format');
+        }
+      }
+
+      // Обрабатываем загруженные фото
+      if (req.files && req.files.photos) {
+        const photoFiles = req.files.photos;
+        const photoBlocks = {};
+
+        // Создаем объект с информацией о загруженных фото
+        photoFiles.forEach(file => {
+          const blockId = file.originalname.split('_')[0]; // Предполагаем, что имя файла начинается с ID блока
+          photoBlocks[blockId] = file.filename;
+        });
+
+        articleData.photoBlocks = photoBlocks;
       }
       
       const article = await articleService.create(articleData, req.user.id);
@@ -42,9 +61,28 @@ class ArticleController {
     try {
       requestLog(req);
       let updateData = req.body;
+
+      // Парсим JSON контент, если он передан как строка
+      if (typeof updateData.content === 'string') {
+        try {
+          updateData.content = JSON.parse(updateData.content);
+        } catch (e) {
+          throw new Error('Invalid content JSON format');
+        }
+      }
       
-      if (req.file) {
-        updateData.photo = req.file.filename;
+      // Обрабатываем загруженные фото
+      if (req.files && req.files.photos) {
+        const photoFiles = req.files.photos;
+        const photoBlocks = {};
+
+        // Создаем объект с информацией о загруженных фото
+        photoFiles.forEach(file => {
+          const blockId = file.originalname.split('_')[0]; // Предполагаем, что имя файла начинается с ID блока
+          photoBlocks[blockId] = file.filename;
+        });
+
+        updateData.photoBlocks = photoBlocks;
       }
       
       const article = await articleService.update(req.params.id, updateData);
