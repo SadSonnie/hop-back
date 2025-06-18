@@ -26,4 +26,10 @@ router.get(
     contextualTagsController.getByParentId
 );
 
+// Получение всех тегов с их контекстными тегами
+router.get(
+    '/all',
+    contextualTagsController.getAllWithContextual
+);
+
 module.exports = router; 

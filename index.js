@@ -27,7 +27,9 @@ const {
   featureRoutes,
   contextualTagsRouter,
   placeContextualTagsRouter,
-  placeUserPhotosTitleRouter
+  placeUserPhotosTitleRouter,
+  clickRoutes,
+  articleRoutes
 } = require("./routes");
 const sessionMiddleware = require("./middleware/sessionMiddleware.js");
 const tgMiddleware = require("./middleware/tgMiddleware.js")
@@ -59,10 +61,6 @@ app.use(
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Apply global middleware
-app.use(tgMiddleware);
-app.use(sessionMiddleware);
-
 // Упрощенный формат логирования
 const customFormat = ":method :url :status - :response-time ms";
 
@@ -76,6 +74,48 @@ app.use(morgan(customFormat, {
   stream: logStream 
 }));
 
+// Public routes that don't require authentication
+app.use("/api/articles", articleRoutes); // Public articles API
+app.use("/api", clickRoutes); // Public clicks API
+
+// Debug middleware
+app.use((req, res, next) => {
+    console.error('\x1b[31m%s\x1b[0m', '!!! [1] First debug middleware !!!');
+    console.error('URL:', req.url);
+    console.error('Method:', req.method);
+    next();
+});
+
+console.error('\x1b[31m%s\x1b[0m', '!!! Mounting feature routes !!!');
+app.use("/api", (req, res, next) => {
+    console.error('\x1b[31m%s\x1b[0m', '!!! [2] Before features middleware !!!');
+    console.error('URL:', req.url);
+    // Если это запрос к features, обрабатываем его здесь
+    if (req.url.startsWith('/features')) {
+        return featureRoutes(req, res, next);
+    }
+    // Иначе пропускаем
+    next();
+});
+console.error('\x1b[31m%s\x1b[0m', '!!! Feature routes mounted !!!');
+
+// Apply global middleware for protected routes
+app.use((req, res, next) => {
+    console.error('\x1b[31m%s\x1b[0m', '!!! [3] Before auth middleware !!!');
+    console.error('URL:', req.url);
+    next();
+});
+
+app.use(tgMiddleware);
+app.use(sessionMiddleware);
+
+app.use((req, res, next) => {
+    console.error('\x1b[31m%s\x1b[0m', '!!! [4] After auth middleware !!!');
+    console.error('URL:', req.url);
+    next();
+});
+
+// Protected API routes
 app.use("/api", userRoutes);
 app.use("/api", feedRoutes);
 app.use("/api", tagRoutes);
@@ -92,12 +132,10 @@ app.use("/api", favoritePlacesRouter);
 app.use("/api", reviewRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api", checklistRoutes);
-app.use("/api/features", featureRoutes);
+app.use("/api", featureRoutes);
 app.use("/api/contextual-tags", contextualTagsRouter);
 app.use("/api/place-contextual-tags", placeContextualTagsRouter);
-app.use("/api/place-user-photos-title", placeUserPhotosTitleRouter);
-
-app.use('/api/articles', require('./routes/articleRoutes'));
+app.use("/api", placeUserPhotosTitleRouter);
 
 app.use(errorMiddleware);
 
@@ -110,7 +148,6 @@ db.sequelize
   .catch((error) => {
     console.error("Ошибка при синхронизации базы данных:", error);
   });
-
 
 app.listen(PORT, () => {
   console.log("Server run");

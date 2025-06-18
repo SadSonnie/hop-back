@@ -6,7 +6,7 @@ const adminMiddleware = require('../middleware/adminMiddleware');
 
 // Установка или обновление заголовка (только для админов)
 router.post(
-    '/set',
+    '/place-user-photos-title/set',
     tgMiddleware,
     adminMiddleware,
     placeUserPhotosTitleController.setTitle
@@ -14,7 +14,7 @@ router.post(
 
 // Удаление заголовка (только для админов)
 router.delete(
-    '/remove',
+    '/place-user-photos-title/remove',
     tgMiddleware,
     adminMiddleware,
     placeUserPhotosTitleController.removeTitle
@@ -22,7 +22,7 @@ router.delete(
 
 // Получение заголовка (публичный доступ)
 router.get(
-    '/:place_id',
+    '/place-user-photos-title/:place_id',
     placeUserPhotosTitleController.getTitle
 );
 

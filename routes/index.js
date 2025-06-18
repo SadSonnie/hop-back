@@ -18,6 +18,8 @@ const featureRoutes = require('./featureRoutes');
 const contextualTagsRouter = require('./contextualTagsRouter');
 const placeContextualTagsRouter = require('./placeContextualTagsRouter');
 const placeUserPhotosTitleRouter = require('./placeUserPhotosTitleRouter');
+const clickRoutes = require('./clickRoutes');
+const articleRoutes = require('./articleRoutes');
 
 module.exports = {
   userRoutes,
@@ -39,5 +41,7 @@ module.exports = {
   featureRoutes,
   contextualTagsRouter,
   placeContextualTagsRouter,
-  placeUserPhotosTitleRouter
+  placeUserPhotosTitleRouter,
+  clickRoutes,
+  articleRoutes
 };

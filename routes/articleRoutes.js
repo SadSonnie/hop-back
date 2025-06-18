@@ -1,7 +1,6 @@
 const Router = require('express').Router;
 const router = new Router();
 const articleController = require('../controllers/articleController');
-const adminMiddleware = require('../middleware/adminMiddleware');
 const { upload } = require('../utils');
 
 // Публичные маршруты
@@ -10,7 +9,6 @@ router.get('/:id', articleController.getById.bind(articleController));
 
 // Защищенные маршруты (только для админов)
 router.post('/',
-  adminMiddleware,
   upload.fields([
     { name: 'photos', maxCount: 10 } // Разрешаем загрузку до 10 фото
   ]),
@@ -18,7 +16,6 @@ router.post('/',
 );
 
 router.put('/:id',
-  adminMiddleware,
   upload.fields([
     { name: 'photos', maxCount: 10 }
   ]),
@@ -26,7 +23,6 @@ router.put('/:id',
 );
 
 router.delete('/:id',
-  adminMiddleware,
   articleController.delete.bind(articleController)
 );
 

@@ -80,23 +80,34 @@ const getFeatureCategoriesService = async () => {
 };
 
 const getAllFeaturesService = async () => {
-    const features = await Features.findAll({
-        include: [{
-            model: FeatureCategory,
-            as: 'category',
-            attributes: ['id', 'name']
-        }],
-        order: [
-            ['category_id', 'ASC'],
-            ['name', 'ASC']
-        ]
-    });
+    console.log('=== getAllFeaturesService called ===');
+    try {
+        const features = await Features.findAll({
+            include: [{
+                model: FeatureCategory,
+                as: 'category',
+                attributes: ['id', 'name']
+            }],
+            order: [
+                ['category_id', 'ASC'],
+                ['name', 'ASC']
+            ]
+        });
 
-    return features.map(feature => ({
-        id: feature.id,
-        name: feature.name,
-        category: feature.category
-    }));
+        console.log('Features found:', features.length);
+        
+        const result = features.map(feature => ({
+            id: feature.id,
+            name: feature.name,
+            category: feature.category
+        }));
+        
+        console.log('=== getAllFeaturesService completed ===');
+        return result;
+    } catch (error) {
+        console.error('Error in getAllFeaturesService:', error);
+        throw error;
+    }
 };
 
 const removeFeatureFromPlaceService = async (place_id, feature_id) => {

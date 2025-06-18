@@ -93,10 +93,16 @@ class FeatureController {
 
   async getAll(req, res, next) {
     try {
-      console.log('Getting all features');
+      console.log('=== GET /api/features ===');
+      console.log('Headers:', req.headers);
+      console.log('Query:', req.query);
+      console.log('Body:', req.body);
+      console.log('========================');
+      
       const features = await getAllFeaturesService();
       return res.json(features);
     } catch (error) {
+      console.error('Error in getAll:', error);
       next(error);
     }
   }

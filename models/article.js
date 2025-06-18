@@ -26,9 +26,47 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     content: {
-      type: DataTypes.JSONB,
+      type: DataTypes.TEXT,
       allowNull: true,
-      defaultValue: { blocks: [] }
+      defaultValue: '{"blocks":[]}',
+      get() {
+        const rawValue = this.getDataValue('content');
+        if (!rawValue) return { blocks: [] };
+        try {
+          return JSON.parse(rawValue);
+        } catch (e) {
+          return {
+            blocks: [{
+              id: `block_${Date.now()}`,
+              type: 'text',
+              content: rawValue
+            }]
+          };
+        }
+      },
+      set(value) {
+        if (!value) {
+          this.setDataValue('content', '{"blocks":[]}');
+        } else if (typeof value === 'string') {
+          try {
+            // Try to parse it as JSON first
+            JSON.parse(value);
+            this.setDataValue('content', value);
+          } catch (e) {
+            // If it's not valid JSON, convert it to our block format
+            this.setDataValue('content', JSON.stringify({
+              blocks: [{
+                id: `block_${Date.now()}`,
+                type: 'text',
+                content: value
+              }]
+            }));
+          }
+        } else {
+          // If it's an object, stringify it
+          this.setDataValue('content', JSON.stringify(value));
+        }
+      }
     },
     photo_url: {
       type: DataTypes.STRING,
@@ -44,6 +82,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     author_id: {
       type: DataTypes.INTEGER,
+      allowNull: true,
       references: {
         model: 'Users',
         key: 'id'

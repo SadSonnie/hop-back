@@ -20,38 +20,30 @@ module.exports = {
         { type: Sequelize.QueryTypes.SELECT }
       );
 
-      // Обновляем тип колонки на JSONB
-      await queryInterface.changeColumn('Articles', 'content', {
-        type: Sequelize.JSONB,
-        allowNull: true,
-        defaultValue: { blocks: [] }
-      });
+      // Обновляем тип колонки на JSONB с использованием USING clause
+      await queryInterface.sequelize.query(`
+        ALTER TABLE "Articles" 
+        ALTER COLUMN "content" TYPE JSONB 
+        USING CASE 
+          WHEN content IS NULL THEN '{"blocks":[]}'::jsonb
+          WHEN content::text = '' THEN '{"blocks":[]}'::jsonb
+          ELSE json_build_object(
+            'blocks', 
+            json_build_array(
+              json_build_object(
+                'id', concat('block_', extract(epoch from now())::text, '_', md5(random()::text)),
+                'type', 'text',
+                'content', content
+              )
+            )
+          )::jsonb
+        END;
+      `);
 
-      // Преобразуем старые текстовые данные в новый формат с блоками
-      for (const article of articles) {
-        if (article.content) {
-          const newContent = {
-            blocks: [
-              {
-                id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                type: 'text',
-                content: article.content
-              }
-            ]
-          };
-
-          await queryInterface.sequelize.query(
-            'UPDATE "Articles" SET content = :content WHERE id = :id',
-            {
-              replacements: { 
-                content: newContent,
-                id: article.id 
-              },
-              type: Sequelize.QueryTypes.UPDATE
-            }
-          );
-        }
-      }
+      await queryInterface.sequelize.query(`
+        ALTER TABLE "Articles" 
+        ALTER COLUMN "content" SET DEFAULT '{"blocks":[]}'::jsonb;
+      `);
     }
   },
 

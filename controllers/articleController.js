@@ -30,7 +30,7 @@ class ArticleController {
         articleData.photoBlocks = photoBlocks;
       }
       
-      const article = await articleService.create(articleData, req.user.id);
+      const article = await articleService.create(articleData, req.user?.id || null);
       res.json(article);
     } catch (error) {
       next(error);
